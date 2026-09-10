@@ -1,0 +1,394 @@
+/*
+ * Chrome around the React Email editor: toolbar, panes, banners, status bar.
+ * The editing surface, bubble menus, slash command and inspector are styled by
+ * @react-email/editor/themes/default.css, whose --re-* variables are reused
+ * here so the two halves stay in step.
+ */
+
+.mxre-root {
+    --mxre-gap: 8px;
+    --mxre-surface-bg: #f4f4f5;
+
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--re-border, #e5e5e5);
+    border-radius: var(--re-radius, 0.75rem);
+    background: var(--re-bg, #fff);
+    color: var(--re-text, #1c1c1c);
+    font-size: 14px;
+}
+
+.mxre-root-fill {
+    height: 100%;
+}
+
+.mxre-root [hidden] {
+    display: none !important;
+}
+
+/* ------------------------------------------------------------------ toolbar */
+
+.mxre-toolbar {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mxre-gap);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--re-border, #e5e5e5);
+    background: var(--re-bg, #fff);
+}
+
+.mxre-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mxre-toolbar-spacer {
+    flex: 1 1 auto;
+}
+
+.mxre-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--re-border, #e5e5e5);
+    border-radius: var(--re-radius-sm, 0.625rem);
+    background: var(--re-bg, #fff);
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.mxre-button:hover:not(:disabled) {
+    background: var(--re-hover, rgba(0, 0, 0, 0.04));
+}
+
+.mxre-button:active:not(:disabled) {
+    background: var(--re-pressed, rgba(0, 0, 0, 0.06));
+}
+
+.mxre-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.mxre-button-icon {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+}
+
+.mxre-button-primary {
+    border-color: #18181b;
+    background: #18181b;
+    color: #fff;
+}
+
+.mxre-button-primary:hover:not(:disabled),
+.mxre-button-primary:active:not(:disabled) {
+    background: #2a2a30;
+}
+
+.mxre-toggle-group {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid var(--re-border, #e5e5e5);
+    border-radius: var(--re-radius-sm, 0.625rem);
+    background: var(--re-hover, rgba(0, 0, 0, 0.04));
+}
+
+.mxre-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 26px;
+    min-width: 30px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: calc(var(--re-radius-sm, 0.625rem) - 2px);
+    background: transparent;
+    color: var(--re-text-muted, #6b6b6b);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mxre-toggle:hover {
+    color: var(--re-text, #1c1c1c);
+}
+
+.mxre-toggle-active {
+    background: var(--re-bg, #fff);
+    color: var(--re-text, #1c1c1c);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------- menu popup */
+
+.mxre-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.mxre-menu-list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--re-border, #e5e5e5);
+    border-radius: var(--re-radius-sm, 0.625rem);
+    background: var(--re-bg, #fff);
+    box-shadow: var(--re-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+.mxre-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mxre-menu-item:hover {
+    background: var(--re-hover, rgba(0, 0, 0, 0.04));
+}
+
+.mxre-menu-item-token {
+    color: var(--re-text-muted, #6b6b6b);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+}
+
+/* ------------------------------------------------------------------ banners */
+
+.mxre-banner {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--re-border, #e5e5e5);
+    font-size: 13px;
+}
+
+.mxre-banner svg {
+    flex: none;
+}
+
+.mxre-banner span {
+    flex: 1 1 auto;
+}
+
+.mxre-banner-error {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.mxre-banner-warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.mxre-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ subject */
+
+.mxre-subject {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--re-border, #e5e5e5);
+}
+
+.mxre-subject-label {
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mxre-subject-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+}
+
+.mxre-subject-input:hover:not(:disabled) {
+    border-color: var(--re-border, #e5e5e5);
+}
+
+.mxre-subject-input:focus {
+    border-color: var(--re-border, #e5e5e5);
+    background: var(--re-bg, #fff);
+    outline: none;
+}
+
+/* --------------------------------------------------------------------- body */
+
+.mxre-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.mxre-view {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mxre-canvas {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mxre-surface {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: auto;
+    padding: 24px;
+    background: var(--mxre-surface-bg);
+}
+
+.mxre-surface .tiptap {
+    outline: none;
+}
+
+.mxre-inspector {
+    flex: none;
+    width: 268px;
+    overflow-y: auto;
+    border-left: 1px solid var(--re-border, #e5e5e5);
+    background: var(--re-bg, #fff);
+}
+
+.mxre-placeholder {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ preview */
+
+.mxre-preview {
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 0;
+    padding: 16px;
+    overflow: auto;
+    background: var(--mxre-surface-bg);
+}
+
+.mxre-preview-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.mxre-preview-frame-mobile {
+    flex: none;
+    border: 1px solid var(--re-border, #e5e5e5);
+    box-shadow: var(--re-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+/* --------------------------------------------------------------------- code */
+
+.mxre-code {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    background: var(--mxre-surface-bg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    tab-size: 2;
+}
+
+/* ------------------------------------------------------------------- status */
+
+.mxre-status {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 16px;
+    padding: 6px 12px;
+    border-top: 1px solid var(--re-border, #e5e5e5);
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 12px;
+}
+
+.mxre-status-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mxre-status-dirty {
+    color: #b45309;
+}
+
+.mxre-status-clean {
+    color: #15803d;
+}
+
+.mxre-status-muted {
+    color: var(--re-text-muted, #6b6b6b);
+}

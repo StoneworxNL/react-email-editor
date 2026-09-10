@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget id="stoneworx.reactemail.ReactEmail" pluginWidget="true" needsEntityContext="true" offlineCapable="true"
+        supportedPlatform="Web"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
+    <name>Email Template Editor</name>
+    <description>Load, edit and save email templates with the React Email 6 editor.</description>
+    <studioProCategory>Add-ons</studioProCategory>
+    <icon/>
+    <properties>
+        <propertyGroup caption="Template">
+            <property key="documentAttribute" type="attribute" required="false">
+                <caption>Document</caption>
+                <description>String attribute holding the editable template as JSON. This is the source of truth: it is what the editor loads and it round-trips without loss. Use an unlimited-length string attribute.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="htmlAttribute" type="attribute" required="false">
+                <caption>Email HTML</caption>
+                <description>String attribute that receives the rendered, send-ready email HTML on save. When no Document attribute is configured this attribute is also used to load the template. Use an unlimited-length string attribute.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="textAttribute" type="attribute" required="false">
+                <caption>Plain text</caption>
+                <description>Optional string attribute that receives the plain-text alternative of the email on save.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="subjectAttribute" type="attribute" required="false">
+                <caption>Subject</caption>
+                <description>Optional string attribute for the email subject. When set, a subject field is shown above the editor.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Editing">
+            <property key="saveMode" type="enumeration" defaultValue="manual">
+                <caption>Save mode</caption>
+                <description>Manual: changes stay in the editor until Save is pressed. Automatic: changes are written to the attributes after a short pause.</description>
+                <enumerationValues>
+                    <enumerationValue key="manual">Manual (Save button)</enumerationValue>
+                    <enumerationValue key="auto">Automatic</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="autoSaveDelay" type="integer" defaultValue="800">
+                <caption>Change delay (ms)</caption>
+                <description>Milliseconds of inactivity after an edit before the widget reacts: in automatic save mode it writes to the attributes, and in both modes it runs the On change action.</description>
+            </property>
+            <property key="placeholderText" type="textTemplate" required="false" multiline="false">
+                <caption>Placeholder</caption>
+                <description>Text shown in empty paragraphs. Leave empty to use the editor default.</description>
+            </property>
+            <property key="warnOnUnsavedChanges" type="boolean" defaultValue="true">
+                <caption>Warn on unsaved changes</caption>
+                <description>Ask the browser to confirm before leaving the page while the template has unsaved changes. Only applies in manual save mode.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Appearance">
+            <property key="showToolbar" type="boolean" defaultValue="true">
+                <caption>Show toolbar</caption>
+                <description>Show the toolbar with save, undo/redo, view switcher and panel controls.</description>
+            </property>
+            <property key="showViewSwitcher" type="boolean" defaultValue="true">
+                <caption>Show view switcher</caption>
+                <description>Let the user switch between Design, Preview, HTML and Text views.</description>
+            </property>
+            <property key="showInspector" type="boolean" defaultValue="true">
+                <caption>Show style inspector</caption>
+                <description>Show the panel that edits the styling of the selected block and of the template as a whole.</description>
+            </property>
+            <property key="heightMode" type="enumeration" defaultValue="fixed">
+                <caption>Height</caption>
+                <description>Fixed uses the height below. Fill stretches the editor to the height of its parent container, which must have a height of its own.</description>
+                <enumerationValues>
+                    <enumerationValue key="fixed">Fixed</enumerationValue>
+                    <enumerationValue key="fill">Fill parent</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="heightValue" type="integer" defaultValue="640">
+                <caption>Height (px)</caption>
+                <description>Height of the widget in pixels.</description>
+            </property>
+            <property key="themePreset" type="enumeration" defaultValue="basic">
+                <caption>Theme</caption>
+                <description>Base styling applied to the email. Custom lets you supply your own style overrides.</description>
+                <enumerationValues>
+                    <enumerationValue key="basic">Basic</enumerationValue>
+                    <enumerationValue key="minimal">Minimal</enumerationValue>
+                    <enumerationValue key="custom">Custom</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="themeConfig" type="string" required="false" multiline="true">
+                <caption>Theme configuration</caption>
+                <description>JSON such as: { "extends": "basic", "styles": { "body": { "backgroundColor": "#f6f9fc" }, "button": { "borderRadius": "6px" } } }. Themeable parts: body, container, h1, h2, h3, paragraph, link, image, button, codeBlock, inlineCode.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Variables">
+            <property key="variablesDatasource" type="datasource" isList="true" required="false">
+                <caption>Variables</caption>
+                <description>Optional list of merge variables the user can insert into the template, for example first name or order number.</description>
+            </property>
+            <property key="variableName" type="attribute" dataSource="variablesDatasource" required="false">
+                <caption>Variable name</caption>
+                <description>Attribute holding the token name, without delimiters. For example firstName.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="variableLabel" type="attribute" dataSource="variablesDatasource" required="false">
+                <caption>Variable label</caption>
+                <description>Optional attribute with a friendly label shown in the insert menu. Falls back to the variable name.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="variableSample" type="attribute" dataSource="variablesDatasource" required="false">
+                <caption>Sample value</caption>
+                <description>Optional attribute with an example value. Used to fill in the variables in the Preview view.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="variablePrefix" type="string" required="false" defaultValue="{{">
+                <caption>Prefix</caption>
+                <description>Characters placed before the variable name.</description>
+            </property>
+            <property key="variableSuffix" type="string" required="false" defaultValue="}}">
+                <caption>Suffix</caption>
+                <description>Characters placed after the variable name.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Images">
+            <property key="imageMode" type="enumeration" defaultValue="dataUrl">
+                <caption>Image handling</caption>
+                <description>How images dropped or pasted into the editor are turned into a URL. Data URL embeds the image in the template and needs no back end, but many email clients will not render it. Microflow hands the upload to your app and is the option to use in production.</description>
+                <enumerationValues>
+                    <enumerationValue key="dataUrl">Embed as data URL</enumerationValue>
+                    <enumerationValue key="promptUrl">Ask for a URL</enumerationValue>
+                    <enumerationValue key="microflow">Upload via microflow</enumerationValue>
+                    <enumerationValue key="disabled">Do not allow images</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="imageDataAttribute" type="attribute" required="false">
+                <caption>Upload: image data</caption>
+                <description>String attribute that receives the base64 encoded file, without the data URL prefix, before the upload action runs.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="imageNameAttribute" type="attribute" required="false">
+                <caption>Upload: file name</caption>
+                <description>Optional string attribute that receives the original file name before the upload action runs.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="imageUrlAttribute" type="attribute" required="false">
+                <caption>Upload: resulting URL</caption>
+                <description>String attribute your upload action fills with the public URL of the stored image. The editor waits for this attribute to change and then inserts the image.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="onImageUpload" type="action" required="false">
+                <caption>Upload action</caption>
+                <description>Runs after the image data has been written to the attributes. Store the file and put its URL in the resulting URL attribute.</description>
+            </property>
+            <property key="imageUploadTimeout" type="integer" defaultValue="30">
+                <caption>Upload timeout (s)</caption>
+                <description>How long to wait for the upload action to fill the resulting URL attribute before giving up.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Events">
+            <property key="onSaveAction" type="action" required="false">
+                <caption>On save</caption>
+                <description>Runs after the template has been written to the attributes by the Save button, by Ctrl+S, or by an automatic save.</description>
+            </property>
+            <property key="onChangeAction" type="action" required="false">
+                <caption>On change</caption>
+                <description>Runs after an edit, once the editor has been idle for the change delay. In automatic save mode it runs after the attributes have been written; a manual save that happens first supersedes it, and On save runs instead.</description>
+            </property>
+        </propertyGroup>
+    </properties>
+</widget>
