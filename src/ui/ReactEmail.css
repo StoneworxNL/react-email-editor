@@ -87,15 +87,17 @@
     justify-content: center;
 }
 
+/* Brand the primary button by setting --mxre-accent, --mxre-accent-hover and --mxre-accent-text in the app theme. */
 .mxre-button-primary {
-    border-color: #18181b;
-    background: #18181b;
-    color: #fff;
+    border-color: var(--mxre-accent, #18181b);
+    background: var(--mxre-accent, #18181b);
+    color: var(--mxre-accent-text, #fff);
 }
 
 .mxre-button-primary:hover:not(:disabled),
 .mxre-button-primary:active:not(:disabled) {
-    background: #2a2a30;
+    border-color: var(--mxre-accent-hover, #2a2a30);
+    background: var(--mxre-accent-hover, #2a2a30);
 }
 
 .mxre-toggle-group {
