@@ -40,7 +40,7 @@
  * @property {string} studioUrl
  */
 
-const DOCS_URL = "https://github.com/stoneworx/email-editor-mendix";
+const DOCS_URL = "https://github.com/StoneworxNL/react-email-editor";
 
 /** Remove a property from the (nested) property group tree, in place. */
 function hideProperty(groups, key) {

@@ -1,6 +1,6 @@
 import { executeAction, isWritable, readString, writeString } from "./mendix";
+import { useEffect, useMemo, useRef } from "react";
 import { useLatest } from "./useLatest";
-import { useMemo } from "react";
 
 const POLL_INTERVAL_MS = 200;
 
@@ -25,8 +25,10 @@ async function uploadViaMicroflow(file, config) {
     if (!isWritable(imageDataAttribute)) {
         throw new Error("Image upload is set to microflow, but the image data attribute is missing or read-only.");
     }
-    if (!imageUrlAttribute) {
-        throw new Error("Image upload is set to microflow, but the resulting URL attribute is not configured.");
+    if (!isWritable(imageUrlAttribute)) {
+        // It has to be cleared before each upload: otherwise a URL left from an
+        // earlier upload would be taken as the answer to this one.
+        throw new Error("Image upload is set to microflow, but the resulting URL attribute is missing or read-only.");
     }
 
     // Clear the result first so we can wait for it to be filled, and so that
@@ -48,6 +50,11 @@ async function uploadViaMicroflow(file, config) {
 
     return new Promise((resolve, reject) => {
         const timer = setInterval(() => {
+            if (config.isCancelled()) {
+                clearInterval(timer);
+                reject(new Error("The editor was closed before the upload finished."));
+                return;
+            }
             const url = readString(config.getLatest().imageUrlAttribute);
             if (url !== "") {
                 clearInterval(timer);
@@ -72,6 +79,16 @@ async function uploadViaMicroflow(file, config) {
  */
 export function useImageUploader(config) {
     const latest = useLatest(config);
+    // Uploads share one set of attributes, so they take turns: a second image
+    // dropped while the first is uploading would otherwise overwrite its data.
+    const queueRef = useRef(Promise.resolve());
+    const unmountedRef = useRef(false);
+    useEffect(() => {
+        unmountedRef.current = false;
+        return () => {
+            unmountedRef.current = true;
+        };
+    }, []);
 
     const { mode } = config;
 
@@ -94,10 +111,16 @@ export function useImageUploader(config) {
                 }
 
                 if (mode === "microflow") {
-                    return await uploadViaMicroflow(file, {
-                        ...latest.current,
-                        getLatest: () => latest.current
-                    });
+                    const upload = queueRef.current.then(() =>
+                        uploadViaMicroflow(file, {
+                            ...latest.current,
+                            getLatest: () => latest.current,
+                            isCancelled: () => unmountedRef.current
+                        })
+                    );
+                    // The next upload waits for this one, whether it succeeds or not.
+                    queueRef.current = upload.catch(() => undefined);
+                    return await upload;
                 }
 
                 return { url: await readAsDataUrl(file) };

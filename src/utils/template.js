@@ -103,7 +103,8 @@ export function readVariables(datasource, attributes, prefix, suffix) {
     }
     const variables = [];
     for (const item of datasource.items) {
-        const fullToken = readListAttribute(attributes.token, item);
+        // A blank Full token falls back to the name rather than inserting spaces.
+        const fullToken = readListAttribute(attributes.token, item)?.trim() || undefined;
         const name = fullToken ? undefined : readListAttribute(attributes.name, item);
         if (!fullToken && !name) {
             continue;

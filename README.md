@@ -14,8 +14,11 @@ A Mendix pluggable widget that loads, edits and saves email templates using the
   padding, colours).
 - **Four views** — Design, Preview (in a sandboxed iframe, desktop or mobile
   width), the rendered HTML, and the plain-text alternative.
-- **Merge variables** — an optional list of tokens such as `{{firstName}}` that
+- **Merge variables** — an optional list of tokens such as `{%FirstName%}` that
   the user can insert from the toolbar, filled in with sample values in Preview.
+  Works directly with Model Reflection tokens for the Email Connector.
+- **Send test** — an optional toolbar button that writes the template and runs
+  your action, for example a popup that sends it with the Email Connector.
 - **Manual or automatic saving**, plus <kbd>Ctrl</kbd>+<kbd>S</kbd>.
 - **Concurrent-edit handling** — if the template changes elsewhere while the
   user has unsaved work, the widget offers the choice rather than silently
@@ -60,12 +63,27 @@ easily tens of kilobytes.
 
 ### Merge variables
 
-Point **Variables** at a list of objects with a name attribute (`firstName`),
-optionally a label (`First name`) and a sample value (`Ada`). The user inserts
-them from the toolbar as literal text — `{{firstName}}` — which survives the
-round-trip through your mail server untouched. Change the delimiters with
-**Prefix** and **Suffix**. Sample values are used only to fill in the Preview;
-the saved template always keeps the tokens.
+Point **Variables** at a list of objects. Each one becomes an entry in the
+toolbar's Variable menu and is inserted at the cursor as literal text, which
+survives the round-trip through your mail server untouched.
+
+- **Full token** (optional): an attribute holding the complete token, delimiters
+  included, inserted exactly as stored. For the Email Connector, bind it to
+  Model Reflection's `Token.CombinedToken` (for example `{%FirstName%}`);
+  `CreateEmailFromTemplate` then fills the tokens in when it sends.
+- **Variable name**: used when there is no full token. The token is the name
+  wrapped in **Prefix** and **Suffix**, `{%` and `%}` by default, which matches
+  the Email Connector.
+- **Variable label** and **Sample value** (optional): the label shown in the
+  menu, and a value used to fill the token in the Preview. The saved template
+  always keeps the tokens.
+
+### Send test
+
+Set **Send test action** and a Send test button appears in the toolbar. It
+writes the current template to the attributes, without running **On save**, and
+then runs the action. Typically that opens a popup that asks for a recipient and
+sends the email with the Email Connector. **Send test caption** sets its label.
 
 ### Images
 
@@ -120,50 +138,45 @@ change is stored in the template document, not in this setting.
 
 ## Mendix version compatibility
 
-**This widget is built for Mendix 10.24 (React 18).** That is not a detail of
-the build script; it reaches into the source. Five things have to agree with the
-Studio Pro you target, and four of them fail loudly only at app build or page
+**This widget is built for Mendix 11 (React 19.2.3).** Five things have to agree
+with the Studio Pro you target, and most of them fail only at app build or page
 load, not while building the widget:
 
-| | Mendix 10.24 | Mendix 11 |
+| | Mendix 10.24 | Mendix 11 (current) |
 | --- | --- | --- |
-| `@mendix/pluggable-widgets-tools` | `10.24.0` | `11.x` |
-| React (`overrides` / `resolutions`) | `18.2.0` | `19.x` |
-| `rollup` (`overrides`) | `3.30.0` — pinned | not needed, tools use 4 |
+| `@mendix/pluggable-widgets-tools` | `10.24.0` | `11.12.x` |
+| React (`overrides` / `resolutions`) | `18.2.0` | `19.2.3` |
+| `rollup` (`overrides`) | `3.30.0`, pinned | not needed, tools use 4 |
 | JSX runtime | classic, `pragma: createElement` | automatic |
-| `import { createElement } from "react"` in every `.jsx` | **required** | not needed |
+| `import { createElement } from "react"` in every `.jsx` | required | not needed |
 
 The React version is the one that bites hardest. The Mendix client supplies
-`react` and `react-dom` to the widget at runtime, but **not** `react-dom/server`
-— so React Email's HTML renderer is bundled into the widget, and it reads
-internals off the host's `react-dom`. Those internals are renamed between
-majors. A React 19 build on a React 18 client loads the page and dies with:
+`react` and `react-dom` to the widget at runtime, but **not**
+`react-dom/server`, so React Email's HTML renderer is bundled into the widget,
+and it reads internals off the host's React. Those internals are renamed between
+majors. A React 18 build on a React 19 client loads the page and dies with
+`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`; the
+reverse fails with `(reading 'd')`. Mendix reports either as "the page includes
+a broken widget".
 
-```
-TypeError: Cannot read properties of undefined (reading 'd')
-```
+The build *mode* has to match too. A locally run app uses **development** React,
+which calls `dispatcher.getOwner()` on the dispatcher the server renderer
+installs, and only the development renderer provides it. A production-only
+widget on a local app fails every save and preview with
+`dispatcher.getOwner is not a function`. So `rollup.config.mjs` bundles both
+builds of `react-dom/server` and picks the one that matches the host React at
+runtime.
 
-which is `react-dom/server@19` asking React 18 for
-`__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE`. Mendix reports
-it as "the page includes a broken widget". Everything in the React Email stack
-peer-accepts `^18 || ^19`, so either works — it just has to *match the client*.
-
-To move this widget to Mendix 11: bump the toolchain to `11.x`, set React to
-`19.x`, drop the `rollup` pin, and delete the `createElement` imports (Mendix 11
-compiles JSX with the automatic runtime, and the lint config there rejects the
-imports as unused).
-
-Two smaller traps, both handled in the config, both worth knowing about:
+Two smaller traps, both handled in the config:
 
 - `react` and `react-dom` must not appear in `dependencies` or
   `devDependencies`. The toolchain marks them `"remove"` and prompts to migrate
   if it finds them; in a non-interactive shell that prompt reads EOF and the
   build **exits 0 having built nothing**. Pin them through `overrides` /
   `resolutions` instead.
-- `rollup` must be pinned. Every `@rollup/plugin-*` that tools 10.24 depends on
-  peer-requires rollup 4, npm installs and hoists it, and it wins the
-  `node_modules/.bin/rollup` link — so the v3-shaped config reaches the v4
-  binary and the build dies with `Unknown input options: acorn, …`.
+- On Mendix 10.24, `rollup` must be pinned to 3: every `@rollup/plugin-*`
+  peer-requires rollup 4, which then wins the `node_modules/.bin/rollup` link
+  and rejects the v3-shaped config with `Unknown input options: acorn, …`.
 
 ## Development
 
@@ -171,7 +184,12 @@ Two smaller traps, both handled in the config, both worth knowing about:
 2. `npm start` rebuilds on every change into the `dist`, `deployment` and
    `widgets` folders of the Mendix project above.
 3. `npm run lint` / `npm run lint:fix`
-4. `npm run release` produces `dist/<version>/stoneworx.ReactEmail.mpk`.
+4. `npm test` runs the unit tests. It uses Babel rather than the toolchain's
+   `test:unit:web`, whose SWC addon refuses to load on Windows machines where
+   `C:\` lets other users replace files.
+5. `npm run release` lints and produces
+   `dist/<version>/stoneworx.ReactEmail.mpk`. Copy it into the app's `widgets`
+   folder and press F4 in Studio Pro.
 
 `prettier.config.js` and `.eslintrc.js` must stay CommonJS, which is why this
 package is not `"type": "module"`; the Rollup config lives in
