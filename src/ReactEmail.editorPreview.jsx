@@ -7,8 +7,6 @@
  * on, so that is what this draws.
  */
 
-import { createElement } from "react";
-
 const VIEWS = ["Design", "Preview", "HTML", "Text"];
 
 function Chip({ children, active }) {

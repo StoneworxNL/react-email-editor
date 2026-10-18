@@ -11,7 +11,6 @@ import {
 } from "./Icons";
 import { VariableMenu } from "./VariableMenu";
 import classNames from "classnames";
-import { createElement } from "react";
 
 const VIEWS = [
     { key: "design", label: "Design" },

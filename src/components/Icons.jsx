@@ -3,8 +3,6 @@
  * The editor surface itself uses the icons that ship with @react-email/editor.
  */
 
-import { createElement } from "react";
-
 function Icon({ children, size = 16, ...rest }) {
     return (
         <svg

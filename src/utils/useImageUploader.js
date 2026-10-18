@@ -1,5 +1,6 @@
 import { executeAction, isWritable, readString, writeString } from "./mendix";
-import { useMemo, useRef } from "react";
+import { useLatest } from "./useLatest";
+import { useMemo } from "react";
 
 const POLL_INTERVAL_MS = 200;
 
@@ -70,8 +71,7 @@ async function uploadViaMicroflow(file, config) {
  * entirely, which is what the editor expects when no uploader is given.
  */
 export function useImageUploader(config) {
-    const latest = useRef(config);
-    latest.current = config;
+    const latest = useLatest(config);
 
     const { mode } = config;
 
@@ -106,5 +106,5 @@ export function useImageUploader(config) {
                 throw error;
             }
         };
-    }, [mode]);
+    }, [mode, latest]);
 }
