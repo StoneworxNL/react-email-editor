@@ -107,6 +107,16 @@ describe("readVariables", () => {
         );
     });
 
+    it("falls back to the name when the full token is blank", () => {
+        const variables = readVariables(
+            ds,
+            { name: listAttribute({ a: "FirstName" }), token: listAttribute({ a: "  " }) },
+            "{%",
+            "%}"
+        );
+        expect(variables[0].token).toBe("{%FirstName%}");
+    });
+
     it("uses the token as the label when there is neither label nor name", () => {
         const variables = readVariables(ds, { token: listAttribute({ b: "{%Email%}" }) }, "{%", "%}");
         expect(variables).toEqual([expect.objectContaining({ id: "b", label: "{%Email%}" })]);

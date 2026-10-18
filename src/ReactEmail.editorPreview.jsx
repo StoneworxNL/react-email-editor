@@ -36,6 +36,8 @@ export function preview({
     showInspector,
     subjectAttribute,
     saveMode,
+    onSendTestAction,
+    sendTestCaption,
     heightMode,
     heightValue,
     class: className,
@@ -93,6 +95,18 @@ export function preview({
                         Reload
                     </span>
                     <span style={{ flex: 1 }} />
+                    {onSendTestAction ? (
+                        <span
+                            style={{
+                                padding: "5px 12px",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 8,
+                                fontSize: 13
+                            }}
+                        >
+                            {typeof sendTestCaption === "string" && sendTestCaption ? sendTestCaption : "Send test"}
+                        </span>
+                    ) : null}
                     {showViewSwitcher ? (
                         <span
                             style={{

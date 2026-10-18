@@ -84,6 +84,55 @@ describe("useImageUploader", () => {
             expect(onError).toHaveBeenCalled();
         });
 
+        it("refuses a read-only URL attribute, whose old value would be taken as the answer", async () => {
+            const { result } = setup({
+                mode: "microflow",
+                imageDataAttribute: attribute(""),
+                imageUrlAttribute: attribute("https://old.example.com/a.png", { readOnly: true }),
+                onImageUpload: action()
+            });
+            await expect(result.current(file)).rejects.toThrow("URL attribute is missing or read-only");
+        });
+
+        it("runs uploads one after the other", async () => {
+            const data = attribute("");
+            const url = attribute("");
+            const upload = action();
+            const order = [];
+            upload.execute.mockImplementation(() => {
+                order.push(`start ${data.value.length}`);
+                const finish = () => {
+                    order.push("finish");
+                    url.setValue(`https://files.example.com/${order.length}.png`);
+                };
+                setTimeout(finish, 30);
+            });
+            const { result } = setup({
+                mode: "microflow",
+                imageDataAttribute: data,
+                imageUrlAttribute: url,
+                onImageUpload: upload
+            });
+
+            const first = result.current(new File(["a"], "a.png", { type: "image/png" }));
+            const second = result.current(new File(["bbbb"], "b.png", { type: "image/png" }));
+            await Promise.all([first, second]);
+            expect(order).toEqual(["start 4", "finish", "start 8", "finish"]);
+        });
+
+        it("stops waiting when the editor goes away", async () => {
+            const { result, unmount } = setup({
+                mode: "microflow",
+                imageDataAttribute: attribute(""),
+                imageUrlAttribute: attribute(""),
+                onImageUpload: action(),
+                timeoutSeconds: 30
+            });
+            const pending = result.current(file);
+            unmount();
+            await expect(pending).rejects.toThrow("closed before the upload finished");
+        });
+
         it("explains a missing configuration", async () => {
             const { result } = setup({ mode: "microflow", imageDataAttribute: attribute("", { readOnly: true }) });
             await expect(result.current(file)).rejects.toThrow("missing or read-only");
