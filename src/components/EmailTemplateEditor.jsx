@@ -1,7 +1,7 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
 import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
-import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
 import { EmailEditor } from "@react-email/editor";
 import { Inspector } from "@react-email/editor/ui";
@@ -10,6 +10,7 @@ import { Toolbar } from "./Toolbar";
 import classNames from "classnames";
 import { resolveTheme } from "../utils/theme";
 import { useImageUploader } from "../utils/useImageUploader";
+import { useLatest } from "../utils/useLatest";
 
 function errorMessage(error) {
     return error instanceof Error ? error.message : String(error);
@@ -95,10 +96,8 @@ export function EmailTemplateEditor(props) {
     const subjectDirty = subjectDraft !== null && subjectDraft !== subjectRaw;
     const dirty = docDirty || subjectDirty;
 
-    const dirtyRef = useRef(false);
-    dirtyRef.current = dirty;
-    const subjectRef = useRef(subject);
-    subjectRef.current = subject;
+    const dirtyRef = useLatest(dirty);
+    const subjectRef = useLatest(subject);
 
     // ------------------------------------------------------------- appearance
 
@@ -180,7 +179,16 @@ export function EmailTemplateEditor(props) {
                 }
             }
         },
-        [emailRef, editable, documentAttribute, htmlAttribute, textAttribute, subjectAttribute, onSaveAction]
+        [
+            emailRef,
+            editable,
+            documentAttribute,
+            htmlAttribute,
+            textAttribute,
+            subjectAttribute,
+            subjectRef,
+            onSaveAction
+        ]
     );
 
     const saveNow = useCallback(() => {
@@ -247,7 +255,7 @@ export function EmailTemplateEditor(props) {
             return;
         }
         applySource(source);
-    }, [ready, source, loaded, isEcho, applySource]);
+    }, [ready, source, loaded, isEcho, applySource, dirtyRef]);
 
     const reload = useCallback(() => {
         if (dirtyRef.current) {
@@ -258,7 +266,7 @@ export function EmailTemplateEditor(props) {
         }
         window.clearTimeout(idleTimerRef.current);
         applySource(source);
-    }, [applySource, source]);
+    }, [applySource, source, dirtyRef]);
 
     const confirmReloadNow = useCallback(() => {
         window.clearTimeout(idleTimerRef.current);

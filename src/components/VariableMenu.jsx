@@ -1,5 +1,5 @@
 import { ChevronDownIcon, VariableIcon } from "./Icons";
-import { createElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Drop-down that inserts a merge variable at the cursor.
