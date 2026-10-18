@@ -109,7 +109,14 @@
             </property>
             <property key="variableName" type="attribute" dataSource="variablesDatasource" required="false">
                 <caption>Variable name</caption>
-                <description>Attribute holding the token name, without delimiters. For example firstName.</description>
+                <description>Attribute holding the token name, without delimiters. For example FirstName. Not needed when a Full token attribute is set.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="variableToken" type="attribute" dataSource="variablesDatasource" required="false">
+                <caption>Full token</caption>
+                <description>Optional attribute holding the complete token, delimiters included, for example {%FirstName%}. It is inserted exactly as stored and the prefix and suffix below are ignored for it. For Model Reflection tokens used by the Email Connector, select Token.CombinedToken here.</description>
                 <attributeTypes>
                     <attributeType name="String"/>
                 </attributeTypes>
@@ -128,11 +135,11 @@
                     <attributeType name="String"/>
                 </attributeTypes>
             </property>
-            <property key="variablePrefix" type="string" required="false" defaultValue="{{">
+            <property key="variablePrefix" type="string" required="false" defaultValue="{%">
                 <caption>Prefix</caption>
-                <description>Characters placed before the variable name.</description>
+                <description>Characters placed before the variable name. The default {% matches the tokens of the Email Connector and Model Reflection modules.</description>
             </property>
-            <property key="variableSuffix" type="string" required="false" defaultValue="}}">
+            <property key="variableSuffix" type="string" required="false" defaultValue="%}">
                 <caption>Suffix</caption>
                 <description>Characters placed after the variable name.</description>
             </property>
@@ -177,6 +184,20 @@
             <property key="imageUploadTimeout" type="integer" defaultValue="30">
                 <caption>Upload timeout (s)</caption>
                 <description>How long to wait for the upload action to fill the resulting URL attribute before giving up.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Test email">
+            <property key="onSendTestAction" type="action" required="false">
+                <caption>Send test action</caption>
+                <description>When set, a Send test button is shown in the toolbar. It first writes the current template to the attributes, without running On save, and then runs this action. Open a popup that asks for a recipient and sends the email, for example with the Email Connector.</description>
+            </property>
+            <property key="sendTestCaption" type="textTemplate" required="false" multiline="false">
+                <caption>Send test caption</caption>
+                <description>Caption of the Send test button.</description>
+                <translations>
+                    <translation lang="en_US">Send test</translation>
+                </translations>
             </property>
         </propertyGroup>
 

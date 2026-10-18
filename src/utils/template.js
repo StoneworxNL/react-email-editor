@@ -65,43 +65,58 @@ export function buildToken(prefix, name, suffix) {
 }
 
 /**
- * Replace every `{{name}}` token with its sample value. Used for the preview
- * only; the saved template keeps the tokens.
+ * Replace every token with its sample value. Used for the preview only; the
+ * saved template keeps the tokens. A token built from a name also matches with
+ * spaces inside the delimiters, e.g. `{{ firstName }}`.
  */
-export function substituteVariables(html, variables, prefix, suffix) {
+export function substituteVariables(html, variables) {
     if (typeof html !== "string" || html === "" || !variables.length) {
         return html;
     }
-    const open = escapeRegExp(prefix ?? "");
-    const close = escapeRegExp(suffix ?? "");
     return variables.reduce((result, variable) => {
         if (variable.sample === undefined) {
             return result;
         }
-        const pattern = new RegExp(`${open}\\s*${escapeRegExp(variable.name)}\\s*${close}`, "g");
-        return result.replace(pattern, variable.sample);
+        const pattern = variable.name
+            ? new RegExp(
+                  `${escapeRegExp(variable.prefix)}\\s*${escapeRegExp(variable.name)}\\s*${escapeRegExp(
+                      variable.suffix
+                  )}`,
+                  "g"
+              )
+            : new RegExp(escapeRegExp(variable.token), "g");
+        // A function replacement keeps `$` in sample values literal.
+        return result.replace(pattern, () => variable.sample);
     }, html);
 }
 
 /**
  * Turn the variables data source into the plain list the UI works with.
- * Entries without a name are dropped: they could not be inserted anyway.
+ *
+ * A Full token, such as a Model Reflection CombinedToken, is inserted exactly
+ * as stored; otherwise the token is the name wrapped in the prefix and suffix.
+ * Entries with neither are dropped: they could not be inserted anyway.
  */
-export function readVariables(datasource, nameAttribute, labelAttribute, sampleAttribute) {
+export function readVariables(datasource, attributes, prefix, suffix) {
     if (!datasource || datasource.status !== "available" || !datasource.items) {
         return [];
     }
     const variables = [];
     for (const item of datasource.items) {
-        const name = readListAttribute(nameAttribute, item);
-        if (!name) {
+        const fullToken = readListAttribute(attributes.token, item);
+        const name = fullToken ? undefined : readListAttribute(attributes.name, item);
+        if (!fullToken && !name) {
             continue;
         }
+        const token = fullToken ?? buildToken(prefix, name, suffix);
         variables.push({
             id: item.id,
             name,
-            label: readListAttribute(labelAttribute, item) ?? name,
-            sample: readListAttribute(sampleAttribute, item)
+            prefix: prefix ?? "",
+            suffix: suffix ?? "",
+            token,
+            label: readListAttribute(attributes.label, item) ?? name ?? token,
+            sample: readListAttribute(attributes.sample, item)
         });
     }
     return variables;

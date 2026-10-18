@@ -1,6 +1,6 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
-import { buildToken, readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
+import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
 import { EmailEditor } from "@react-email/editor";
@@ -38,13 +38,16 @@ export function EmailTemplateEditor(props) {
         themeConfig,
         variablesDatasource,
         variableName,
+        variableToken,
         variableLabel,
         variableSample,
         variablePrefix,
         variableSuffix,
         imageMode,
         onSaveAction,
-        onChangeAction
+        onChangeAction,
+        onSendTestAction,
+        sendTestCaption
     } = props;
 
     const [loaded, setLoaded] = useState(null);
@@ -71,6 +74,7 @@ export function EmailTemplateEditor(props) {
     const loadedSignatureRef = useRef(null);
     const saveSequenceRef = useRef(0);
     const idleTimerRef = useRef(null);
+    const selectionRef = useRef(null);
 
     // ---------------------------------------------------------------- sources
 
@@ -104,8 +108,22 @@ export function EmailTemplateEditor(props) {
     );
 
     const variables = useMemo(
-        () => readVariables(variablesDatasource, variableName, variableLabel, variableSample),
-        [variablesDatasource, variableName, variableLabel, variableSample]
+        () =>
+            readVariables(
+                variablesDatasource,
+                { name: variableName, token: variableToken, label: variableLabel, sample: variableSample },
+                variablePrefix,
+                variableSuffix
+            ),
+        [
+            variablesDatasource,
+            variableName,
+            variableToken,
+            variableLabel,
+            variableSample,
+            variablePrefix,
+            variableSuffix
+        ]
     );
 
     const uploadImage = useImageUploader({
@@ -256,6 +274,7 @@ export function EmailTemplateEditor(props) {
     // ------------------------------------------------------------ editor wire
 
     const handleReady = useCallback(ref => {
+        selectionRef.current = null;
         setEmailRef(ref);
         baselineRef.current = serializeDocument(ref.getJSON());
         setDocDirty(false);
@@ -278,6 +297,12 @@ export function EmailTemplateEditor(props) {
         const sync = () => {
             setCanUndo(editor.can().undo());
             setCanRedo(editor.can().redo());
+            // Remember where the cursor was while the user was typing, so a
+            // toolbar insert lands there even if the editor lost its selection.
+            if (editor.isFocused) {
+                const { from, to } = editor.state.selection;
+                selectionRef.current = { from, to };
+            }
         };
         sync();
         editor.on("transaction", sync);
@@ -324,10 +349,7 @@ export function EmailTemplateEditor(props) {
         };
     }, [view, composed, emailRef]);
 
-    const previewHtml = useMemo(
-        () => substituteVariables(composed?.html ?? "", variables, variablePrefix, variableSuffix),
-        [composed, variables, variablePrefix, variableSuffix]
-    );
+    const previewHtml = useMemo(() => substituteVariables(composed?.html ?? "", variables), [composed, variables]);
 
     // -------------------------------------------------------------- shortcuts
 
@@ -367,10 +389,32 @@ export function EmailTemplateEditor(props) {
             if (!editor) {
                 return;
             }
-            editor.chain().focus().insertContent(buildToken(variablePrefix, variable.name, variableSuffix)).run();
+            const size = editor.state.doc.content.size;
+            const remembered = selectionRef.current;
+            const chain = editor.chain().focus();
+            if (remembered && remembered.to <= size) {
+                chain.insertContentAt(remembered, variable.token);
+            } else {
+                chain.insertContent(variable.token);
+            }
+            chain.run();
         },
-        [emailRef, variablePrefix, variableSuffix]
+        [emailRef]
     );
+
+    const canSendTest = Boolean(onSendTestAction);
+    const sendTest = useCallback(async () => {
+        window.clearTimeout(idleTimerRef.current);
+        // Write the current template first, so the action sends what is on
+        // screen, but leave On save to an explicit save.
+        if (editable) {
+            const written = await persist({ runSaveAction: false });
+            if (!written) {
+                return;
+            }
+        }
+        executeAction(onSendTestAction);
+    }, [editable, persist, onSendTestAction]);
 
     const copyCurrentView = useCallback(() => {
         const value = view === "text" ? composed?.text : composed?.html;
@@ -423,16 +467,17 @@ export function EmailTemplateEditor(props) {
                     onRedo={() => emailRef?.editor?.chain().focus().redo().run()}
                     onReload={reload}
                     onSave={saveNow}
+                    onSendTest={canSendTest ? sendTest : undefined}
                     onToggleInspector={() => setInspectorOpen(open => !open)}
                     onUndo={() => emailRef?.editor?.chain().focus().undo().run()}
                     onViewChange={setView}
                     previewWidth={previewWidth}
                     saveMode={saveMode}
                     saving={saving}
+                    sendTestCaption={sendTestCaption?.value || "Send test"}
+                    sendTestDisabled={saving || !onSendTestAction?.canExecute || onSendTestAction?.isExecuting}
                     showInspector={showInspector}
                     showViewSwitcher={showViewSwitcher}
-                    variablePrefix={variablePrefix}
-                    variableSuffix={variableSuffix}
                     variables={variables}
                     view={view}
                 />

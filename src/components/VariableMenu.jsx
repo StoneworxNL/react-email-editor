@@ -1,6 +1,5 @@
 import { ChevronDownIcon, VariableIcon } from "./Icons";
 import { createElement, useEffect, useRef, useState } from "react";
-import { buildToken } from "../utils/template";
 
 /**
  * Drop-down that inserts a merge variable at the cursor.
@@ -9,7 +8,7 @@ import { buildToken } from "../utils/template";
  * and a custom Tiptap node would not survive the round-trip through a mail
  * server the way literal text does.
  */
-export function VariableMenu({ variables, prefix, suffix, disabled, onInsert }) {
+export function VariableMenu({ variables, disabled, onInsert }) {
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
 
@@ -68,7 +67,7 @@ export function VariableMenu({ variables, prefix, suffix, disabled, onInsert }) 
                             type="button"
                         >
                             <span className="mxre-menu-item-label">{variable.label}</span>
-                            <span className="mxre-menu-item-token">{buildToken(prefix, variable.name, suffix)}</span>
+                            <span className="mxre-menu-item-token">{variable.token}</span>
                         </button>
                     ))}
                 </div>
