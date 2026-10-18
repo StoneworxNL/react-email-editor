@@ -92,7 +92,18 @@ export function getProperties(values, defaultProperties, _target) {
     }
 
     if (!values.variablesDatasource) {
-        hideProperties(groups, ["variableName", "variableLabel", "variableSample", "variablePrefix", "variableSuffix"]);
+        hideProperties(groups, [
+            "variableName",
+            "variableToken",
+            "variableLabel",
+            "variableSample",
+            "variablePrefix",
+            "variableSuffix"
+        ]);
+    }
+
+    if (!values.onSendTestAction) {
+        hideProperty(groups, "sendTestCaption");
     }
 
     if (values.imageMode !== "microflow") {
@@ -143,11 +154,12 @@ export function check(values) {
         });
     }
 
-    if (values.variablesDatasource && !values.variableName) {
+    if (values.variablesDatasource && !values.variableName && !values.variableToken) {
         errors.push({
             property: "variableName",
             severity: "error",
-            message: "Select the attribute that holds the variable name, otherwise no variable can be inserted.",
+            message:
+                "Select the attribute that holds the variable name or the full token, otherwise no variable can be inserted.",
             url: DOCS_URL
         });
     }

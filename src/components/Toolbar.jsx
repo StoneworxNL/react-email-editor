@@ -1,4 +1,14 @@
-import { CopyIcon, DesktopIcon, MobileIcon, PanelIcon, RedoIcon, RefreshIcon, SaveIcon, UndoIcon } from "./Icons";
+import {
+    CopyIcon,
+    DesktopIcon,
+    MobileIcon,
+    PanelIcon,
+    RedoIcon,
+    RefreshIcon,
+    SaveIcon,
+    SendIcon,
+    UndoIcon
+} from "./Icons";
 import { VariableMenu } from "./VariableMenu";
 import classNames from "classnames";
 import { createElement } from "react";
@@ -33,9 +43,10 @@ export function Toolbar({
     onSave,
     onReload,
     variables,
-    variablePrefix,
-    variableSuffix,
     onInsertVariable,
+    onSendTest,
+    sendTestCaption,
+    sendTestDisabled,
     showInspector,
     inspectorOpen,
     onToggleInspector,
@@ -95,13 +106,7 @@ export function Toolbar({
                     >
                         <RedoIcon />
                     </button>
-                    <VariableMenu
-                        disabled={!editable}
-                        onInsert={onInsertVariable}
-                        prefix={variablePrefix}
-                        suffix={variableSuffix}
-                        variables={variables}
-                    />
+                    <VariableMenu disabled={!editable} onInsert={onInsertVariable} variables={variables} />
                 </div>
             ) : null}
 
@@ -144,6 +149,19 @@ export function Toolbar({
             ) : null}
 
             <div className="mxre-toolbar-spacer" />
+
+            {onSendTest ? (
+                <button
+                    className="mxre-button"
+                    disabled={sendTestDisabled}
+                    onClick={onSendTest}
+                    title="Save the current template and send it as a test email"
+                    type="button"
+                >
+                    <SendIcon />
+                    <span>{sendTestCaption}</span>
+                </button>
+            ) : null}
 
             {showViewSwitcher ? (
                 <ToggleGroup label="View">
