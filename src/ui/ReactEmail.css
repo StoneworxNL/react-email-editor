@@ -301,6 +301,12 @@
 }
 
 .mxre-surface {
+    /*
+     * The containing block of React Email's floating controls (bubble menus,
+     * the image pencil). Without it they are positioned against an element
+     * outside this scroll area and stay on screen when their block scrolls out.
+     */
+    position: relative;
     flex: 1 1 auto;
     min-width: 0;
     overflow: auto;
@@ -356,7 +362,8 @@
 }
 
 .mxre-preview-frame-mobile {
-    flex: none;
+    /* Fixed width (set inline), full height like the desktop frame. */
+    flex: 1 1 auto;
     border: 1px solid var(--re-border, #e5e5e5);
     box-shadow: var(--re-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
 }
@@ -419,6 +426,9 @@
  */
 .mxre-surface .tiptap .node-container {
     max-width: 100%;
+    /* Centred, as React Email renders it in the sent email (align="center"). */
+    margin-right: auto;
+    margin-left: auto;
 }
 
 .mxre-preview-frame-mobile {
