@@ -18,6 +18,16 @@
     background: var(--re-bg, #fff);
     color: var(--re-text, #1c1c1c);
     font-size: 14px;
+
+    /*
+     * Size the widget from the space it is given, never from its content. The
+     * email inside is 600px wide; without this, Mendix's flex layouts (layout
+     * grid columns, scroll containers) grow to fit it and the whole page scrolls
+     * sideways on a phone. It also makes the widget a container the narrow-layout
+     * rules at the end of this file query.
+     */
+    container: mxre / inline-size;
+    max-width: 100%;
 }
 
 .mxre-root-fill {
@@ -393,4 +403,61 @@
 
 .mxre-status-muted {
     color: var(--re-text-muted, #6b6b6b);
+}
+
+/* ------------------------------------------------------------ narrow widths */
+
+/*
+ * The editor shows the email at its real width up to the template's container
+ * width (600px by default) and no wider than the space it has. That is also how
+ * the sent email behaves: React Email renders the container as
+ * max-width: 600px; width: 100%.
+ */
+.mxre-surface .tiptap .node-container {
+    max-width: 100%;
+}
+
+.mxre-preview-frame-mobile {
+    max-width: 100%;
+}
+
+/* Phones and narrow columns: stack the style panel under the email. */
+@container mxre (max-width: 720px) {
+    .mxre-canvas {
+        flex-direction: column;
+    }
+
+    .mxre-inspector {
+        width: auto;
+        max-height: 40%;
+        border-top: 1px solid var(--re-border, #e5e5e5);
+        border-left: 0;
+    }
+
+    .mxre-surface {
+        padding: 12px;
+    }
+
+    .mxre-preview {
+        padding: 8px;
+    }
+}
+
+/* Very narrow: icon-only toolbar buttons (each keeps its title), except Save. */
+@container mxre (max-width: 480px) {
+    .mxre-toolbar {
+        padding: 6px 8px;
+    }
+
+    .mxre-button:not(.mxre-button-primary) > span {
+        display: none;
+    }
+
+    .mxre-subject {
+        padding: 6px 8px;
+    }
+
+    .mxre-subject-label {
+        display: none;
+    }
 }
