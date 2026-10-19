@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
 import { EmailEditor } from "@react-email/editor";
 import { Inspector } from "@react-email/editor/ui";
+import { NodeBreadcrumb } from "./NodeBreadcrumb";
 import { PreviewPane } from "./PreviewPane";
+import { SelectionHighlight } from "./SelectionHighlight";
 import { Toolbar } from "./Toolbar";
 import classNames from "classnames";
 import { resolveTheme } from "../utils/theme";
@@ -562,9 +564,10 @@ export function EmailTemplateEditor(props) {
                                 placeholder={placeholderText?.value || undefined}
                                 theme={theme}
                             >
+                                <SelectionHighlight />
                                 {showInspector && inspectorOpen ? (
                                     <Inspector.Root className="mxre-inspector">
-                                        <Inspector.Breadcrumb />
+                                        <NodeBreadcrumb />
                                         <Inspector.Document />
                                         <Inspector.Node />
                                         <Inspector.Text />

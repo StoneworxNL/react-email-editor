@@ -20,6 +20,8 @@ jest.mock("@react-email/editor", () => {
     return { EmailEditor };
 });
 
+jest.mock("@tiptap/react", () => ({ useCurrentEditor: () => ({ editor: null }) }));
+
 jest.mock("@react-email/editor/ui", () => {
     const Pass = ({ children }) => <div>{children}</div>;
     const Nothing = () => null;
