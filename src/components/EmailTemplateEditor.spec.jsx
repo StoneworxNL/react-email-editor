@@ -299,6 +299,28 @@ describe("EmailTemplateEditor", () => {
         expect(mockEditorProps.content).toEqual(DOC);
     });
 
+    describe("style panel", () => {
+        const originalWidth = window.innerWidth;
+        afterEach(() => {
+            window.innerWidth = originalWidth;
+        });
+
+        it("starts open on a wide screen", async () => {
+            window.innerWidth = 1280;
+            render(<EmailTemplateEditor {...makeProps()} />);
+            expect(await screen.findByTitle("Hide the style panel")).toHaveAttribute("aria-pressed", "true");
+        });
+
+        it("starts closed on a phone, and can still be opened", async () => {
+            window.innerWidth = 375;
+            render(<EmailTemplateEditor {...makeProps()} />);
+            const toggle = await screen.findByTitle("Show the style panel");
+            expect(toggle).toHaveAttribute("aria-pressed", "false");
+            fireEvent.click(toggle);
+            expect(screen.getByTitle("Hide the style panel")).toHaveAttribute("aria-pressed", "true");
+        });
+    });
+
     it("asks before a reload throws away unsaved work", async () => {
         render(<EmailTemplateEditor {...makeProps()} />);
         await screen.findByTestId("surface");

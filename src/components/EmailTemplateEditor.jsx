@@ -12,6 +12,9 @@ import { resolveTheme } from "../utils/theme";
 import { useImageUploader } from "../utils/useImageUploader";
 import { useLatest } from "../utils/useLatest";
 
+/** Matches the narrow-layout container query in ReactEmail.css. */
+const NARROW_VIEWPORT = 720;
+
 function errorMessage(error) {
     return error instanceof Error ? error.message : String(error);
 }
@@ -61,7 +64,8 @@ export function EmailTemplateEditor(props) {
     const [externalChange, setExternalChange] = useState(false);
     const [view, setView] = useState("design");
     const [previewWidth, setPreviewWidth] = useState("desktop");
-    const [inspectorOpen, setInspectorOpen] = useState(true);
+    // On a phone the style panel would take most of the editor, so it starts closed there.
+    const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > NARROW_VIEWPORT);
     const [composed, setComposed] = useState(null);
     const [copied, setCopied] = useState(false);
     const [canUndo, setCanUndo] = useState(false);
