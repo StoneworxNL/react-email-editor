@@ -14,6 +14,8 @@ describe("applyMobileLayout", () => {
         expect(css).toContain(`@media only screen and (max-width: ${MOBILE_BREAKPOINT}px)`);
         expect(css).toContain('td[data-id="__react-email-column"]{display:block !important;width:100% !important');
         expect(css).toContain("img{max-width:100% !important");
+        // Without fixed layout the container still grows to fit the columns.
+        expect(css).toContain('table[style*="max-width"]{width:100% !important;table-layout:fixed !important}');
     });
 
     it("puts the rules in the head and keeps the content", () => {
