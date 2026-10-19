@@ -1,6 +1,7 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
 import { applyDarkMode, darkPreviewHtml } from "../utils/darkMode";
+import { applyMobileLayout } from "../utils/mobileLayout";
 import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
@@ -161,8 +162,9 @@ export function EmailTemplateEditor(props) {
             try {
                 const documentJson = serializeDocument(ref.getJSON());
                 const email = await ref.getEmail();
-                // What is stored and sent: React Email's HTML plus the dark colours.
-                const html = applyDarkMode(email.html, dark);
+                // What is stored and sent: React Email's HTML, with columns that
+                // stack on phones and the dark colours.
+                const html = applyDarkMode(applyMobileLayout(email.html), dark);
                 const { text } = email;
                 if (sequence !== saveSequenceRef.current) {
                     // A newer save started while react-email was rendering.
@@ -374,10 +376,10 @@ export function EmailTemplateEditor(props) {
     }, [view, composed, emailRef]);
 
     // The HTML as it will be stored and sent, dark colours included.
-    const composedHtml = useMemo(() => applyDarkMode(composed?.html ?? "", dark), [composed, dark]);
+    const composedHtml = useMemo(() => applyDarkMode(applyMobileLayout(composed?.html ?? ""), dark), [composed, dark]);
 
     const previewHtml = useMemo(() => {
-        const filled = substituteVariables(composed?.html ?? "", variables);
+        const filled = applyMobileLayout(substituteVariables(composed?.html ?? "", variables));
         return previewScheme === "dark" ? darkPreviewHtml(filled, dark) : applyDarkMode(filled, dark);
     }, [composed, variables, previewScheme, dark]);
 
