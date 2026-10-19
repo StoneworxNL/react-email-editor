@@ -2,11 +2,13 @@ import {
     CopyIcon,
     DesktopIcon,
     MobileIcon,
+    MoonIcon,
     PanelIcon,
     RedoIcon,
     RefreshIcon,
     SaveIcon,
     SendIcon,
+    SunIcon,
     UndoIcon
 } from "./Icons";
 import { VariableMenu } from "./VariableMenu";
@@ -51,6 +53,8 @@ export function Toolbar({
     onToggleInspector,
     previewWidth,
     onPreviewWidthChange,
+    previewScheme,
+    onPreviewSchemeChange,
     onCopy,
     copied
 }) {
@@ -133,6 +137,30 @@ export function Toolbar({
                             type="button"
                         >
                             <MobileIcon />
+                        </button>
+                    </ToggleGroup>
+                    <ToggleGroup label="Colour scheme">
+                        <button
+                            aria-pressed={previewScheme !== "dark"}
+                            className={classNames("mxre-toggle", {
+                                "mxre-toggle-active": previewScheme !== "dark"
+                            })}
+                            onClick={() => onPreviewSchemeChange("light")}
+                            title="Light mode"
+                            type="button"
+                        >
+                            <SunIcon />
+                        </button>
+                        <button
+                            aria-pressed={previewScheme === "dark"}
+                            className={classNames("mxre-toggle", {
+                                "mxre-toggle-active": previewScheme === "dark"
+                            })}
+                            onClick={() => onPreviewSchemeChange("dark")}
+                            title="Dark mode"
+                            type="button"
+                        >
+                            <MoonIcon />
                         </button>
                     </ToggleGroup>
                 </div>

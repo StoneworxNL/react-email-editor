@@ -1,5 +1,6 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
+import { applyDarkMode, darkPreviewHtml } from "../utils/darkMode";
 import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
@@ -66,6 +67,7 @@ export function EmailTemplateEditor(props) {
     const [externalChange, setExternalChange] = useState(false);
     const [view, setView] = useState("design");
     const [previewWidth, setPreviewWidth] = useState("desktop");
+    const [previewScheme, setPreviewScheme] = useState("light");
     // On a phone the style panel would take most of the editor, so it starts closed there.
     // A width of 0 means the page is not laid out yet (a hidden frame): assume a wide screen.
     const [inspectorOpen, setInspectorOpen] = useState(
@@ -110,10 +112,11 @@ export function EmailTemplateEditor(props) {
 
     // ------------------------------------------------------------- appearance
 
-    const { theme, error: themeError } = useMemo(
-        () => resolveTheme(themePreset, themeConfig),
-        [themePreset, themeConfig]
-    );
+    const {
+        theme,
+        dark,
+        error: themeError
+    } = useMemo(() => resolveTheme(themePreset, themeConfig), [themePreset, themeConfig]);
 
     const variables = useMemo(
         () =>
@@ -157,7 +160,10 @@ export function EmailTemplateEditor(props) {
             setError(null);
             try {
                 const documentJson = serializeDocument(ref.getJSON());
-                const { html, text } = await ref.getEmail();
+                const email = await ref.getEmail();
+                // What is stored and sent: React Email's HTML plus the dark colours.
+                const html = applyDarkMode(email.html, dark);
+                const { text } = email;
                 if (sequence !== saveSequenceRef.current) {
                     // A newer save started while react-email was rendering.
                     return false;
@@ -196,7 +202,8 @@ export function EmailTemplateEditor(props) {
             textAttribute,
             subjectAttribute,
             subjectRef,
-            onSaveAction
+            onSaveAction,
+            dark
         ]
     );
 
@@ -366,7 +373,20 @@ export function EmailTemplateEditor(props) {
         };
     }, [view, composed, emailRef]);
 
-    const previewHtml = useMemo(() => substituteVariables(composed?.html ?? "", variables), [composed, variables]);
+    // The HTML as it will be stored and sent, dark colours included.
+    const composedHtml = useMemo(() => applyDarkMode(composed?.html ?? "", dark), [composed, dark]);
+
+    const previewHtml = useMemo(() => {
+        const filled = substituteVariables(composed?.html ?? "", variables);
+        return previewScheme === "dark" ? darkPreviewHtml(filled, dark) : applyDarkMode(filled, dark);
+    }, [composed, variables, previewScheme, dark]);
+
+    const previewNote =
+        previewScheme === "dark"
+            ? dark
+                ? "Dark mode as Apple Mail and Outlook for Mac show it, using the theme's dark colours."
+                : "Simulated: how apps that recolour emails themselves, such as Gmail, may show it. Add dark colours to the theme to design the dark version."
+            : null;
 
     // -------------------------------------------------------------- shortcuts
 
@@ -434,7 +454,7 @@ export function EmailTemplateEditor(props) {
     }, [editable, persist, onSendTestAction]);
 
     const copyCurrentView = useCallback(() => {
-        const value = view === "text" ? composed?.text : composed?.html;
+        const value = view === "text" ? composed?.text : composedHtml;
         if (!value) {
             return;
         }
@@ -449,7 +469,7 @@ export function EmailTemplateEditor(props) {
                 window.setTimeout(() => setCopied(false), 1500);
             })
             .catch(caught => setError(`Copying failed: ${errorMessage(caught)}`));
-    }, [view, composed]);
+    }, [view, composed, composedHtml]);
 
     const changeSubject = useCallback(
         event => {
@@ -481,6 +501,8 @@ export function EmailTemplateEditor(props) {
                     onCopy={copyCurrentView}
                     onInsertVariable={insertVariable}
                     onPreviewWidthChange={setPreviewWidth}
+                    onPreviewSchemeChange={setPreviewScheme}
+                    previewScheme={previewScheme}
                     onRedo={() => emailRef?.editor?.chain().focus().redo().run()}
                     onReload={reload}
                     onSave={saveNow}
@@ -586,11 +608,11 @@ export function EmailTemplateEditor(props) {
                 </div>
 
                 <div className="mxre-view" hidden={view !== "preview"}>
-                    <PreviewPane html={previewHtml} loading={composing} width={previewWidth} />
+                    <PreviewPane html={previewHtml} loading={composing} note={previewNote} width={previewWidth} />
                 </div>
 
                 <div className="mxre-view" hidden={view !== "html"}>
-                    <CodePane emptyLabel="Nothing to show yet." loading={composing} value={composed?.html} />
+                    <CodePane emptyLabel="Nothing to show yet." loading={composing} value={composedHtml || undefined} />
                 </div>
 
                 <div className="mxre-view" hidden={view !== "text"}>

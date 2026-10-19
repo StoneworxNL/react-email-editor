@@ -98,7 +98,7 @@
             </property>
             <property key="themeConfig" type="string" required="false" multiline="true">
                 <caption>Theme configuration</caption>
-                <description>JSON such as: { "extends": "basic", "styles": { "body": { "backgroundColor": "#f6f9fc" }, "button": { "borderRadius": "6px" } } }. Themeable parts: body, container, h1, h2, h3, paragraph, link, image, button, codeBlock, inlineCode.</description>
+                <description>JSON such as: { "extends": "basic", "styles": { "body": { "backgroundColor": "#f6f9fc" }, "button": { "borderRadius": "6px" } } }. Themeable parts: body, container, h1, h2, h3, paragraph, link, image, button, codeBlock, inlineCode. Add "dark": { "body": { "backgroundColor": "#1b5169" } } for dark mode colours (parts: body, container, surface, h1, h2, h3, paragraph, link, button, divider; properties: backgroundColor, color, borderColor), which are written into the email for mail apps in dark mode.</description>
             </property>
         </propertyGroup>
 

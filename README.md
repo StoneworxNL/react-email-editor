@@ -115,6 +115,36 @@ Themeable parts: `body`, `container`, `h1`, `h2`, `h3`, `paragraph`, `link`,
 `image`, `button`, `codeBlock`, `inlineCode`. Invalid JSON or an unknown part
 falls back to `basic` and says so in the widget rather than failing to render.
 
+#### Dark mode
+
+React Email renders every style inline, and its emails carry no dark colours.
+Add a `dark` object to the custom theme to give them some:
+
+```json
+{
+  "extends": "basic",
+  "styles": { "body": { "backgroundColor": "#f4f5f6" } },
+  "dark": {
+    "body": { "backgroundColor": "#1b5169", "color": "#f3f4f5" },
+    "container": { "backgroundColor": "#2e3135" },
+    "paragraph": { "color": "#e9eef0" },
+    "button": { "backgroundColor": "#0089ab", "color": "#ffffff" }
+  }
+}
+```
+
+Parts: `body`, `container`, `surface` (panels inside the container), `h1`–`h3`,
+`paragraph`, `link`, `button`, `divider`; properties: `backgroundColor`,
+`color`, `borderColor`. On save the widget tags the rendered elements by role
+and adds `color-scheme` meta tags and `prefers-color-scheme: dark` rules (plus
+Outlook's `[data-ogsc]`/`[data-ogsb]` variants), so Apple Mail, Outlook for Mac
+and Outlook.com show the designed dark version. Gmail and Outlook for Windows
+recolour emails themselves and ignore it.
+
+The Preview's sun/moon switch shows the dark version, or, without dark colours,
+a simulation of the apps that invert colours, so an invisible logo or a
+low-contrast button shows up before sending.
+
 The user can also change these from the style inspector, in which case the
 change is stored in the template document, not in this setting.
 
