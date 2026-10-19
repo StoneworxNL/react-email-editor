@@ -67,4 +67,47 @@ describe("selection highlight plugin", () => {
         expect(view.dispatch).toHaveBeenCalledTimes(1);
         expect(selectionHighlightKey.getState(view.state).active).toBe(true);
     });
+
+    it.each(["mousedown", "keydown"])("switches on with a %s in an editor that already had focus", event => {
+        const { plugin, state } = stateWith(doc => TextSelection.create(doc, 3));
+        const view = { state };
+        view.dispatch = jest.fn(tr => {
+            view.state = view.state.apply(tr);
+        });
+        plugin.props.handleDOMEvents[event](view);
+        expect(selectionHighlightKey.getState(view.state).active).toBe(true);
+    });
+
+    describe("when registered on an editor", () => {
+        beforeEach(() => jest.useFakeTimers());
+        afterEach(() => jest.useRealTimers());
+
+        function mountedView(hasFocus) {
+            const { plugin, state } = stateWith(doc => TextSelection.create(doc, 3));
+            const view = { state, isDestroyed: false, hasFocus: () => hasFocus };
+            view.dispatch = jest.fn(tr => {
+                view.state = view.state.apply(tr);
+            });
+            return { view, pluginView: plugin.spec.view(view) };
+        }
+
+        it("switches on if the editor already has focus, as React Email gives it on load", () => {
+            const { view } = mountedView(true);
+            jest.runAllTimers();
+            expect(selectionHighlightKey.getState(view.state).active).toBe(true);
+        });
+
+        it("stays off for an editor without focus", () => {
+            const { view } = mountedView(false);
+            jest.runAllTimers();
+            expect(view.dispatch).not.toHaveBeenCalled();
+        });
+
+        it("does nothing once removed again", () => {
+            const { view, pluginView } = mountedView(true);
+            pluginView.destroy();
+            jest.runAllTimers();
+            expect(view.dispatch).not.toHaveBeenCalled();
+        });
+    });
 });

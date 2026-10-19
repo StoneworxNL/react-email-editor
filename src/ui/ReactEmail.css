@@ -314,7 +314,9 @@
 
 .mxre-inspector {
     flex: none;
+    box-sizing: border-box;
     width: 268px;
+    padding: 12px 16px;
     overflow-y: auto;
     border-left: 1px solid var(--re-border, #e5e5e5);
     background: var(--re-bg, #fff);
