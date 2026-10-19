@@ -313,6 +313,12 @@ describe("EmailTemplateEditor", () => {
             expect(await screen.findByTitle("Hide the style panel")).toHaveAttribute("aria-pressed", "true");
         });
 
+        it("starts open when the width is not known yet", async () => {
+            window.innerWidth = 0;
+            render(<EmailTemplateEditor {...makeProps()} />);
+            expect(await screen.findByTitle("Hide the style panel")).toHaveAttribute("aria-pressed", "true");
+        });
+
         it("starts closed on a phone, and can still be opened", async () => {
             window.innerWidth = 375;
             render(<EmailTemplateEditor {...makeProps()} />);

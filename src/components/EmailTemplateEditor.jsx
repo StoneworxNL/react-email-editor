@@ -67,7 +67,10 @@ export function EmailTemplateEditor(props) {
     const [view, setView] = useState("design");
     const [previewWidth, setPreviewWidth] = useState("desktop");
     // On a phone the style panel would take most of the editor, so it starts closed there.
-    const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > NARROW_VIEWPORT);
+    // A width of 0 means the page is not laid out yet (a hidden frame): assume a wide screen.
+    const [inspectorOpen, setInspectorOpen] = useState(
+        () => !(window.innerWidth > 0 && window.innerWidth <= NARROW_VIEWPORT)
+    );
     const [composed, setComposed] = useState(null);
     const [copied, setCopied] = useState(false);
     const [canUndo, setCanUndo] = useState(false);
