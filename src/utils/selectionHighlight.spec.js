@@ -1,10 +1,5 @@
 import { EditorState, NodeSelection, TextSelection } from "@tiptap/pm/state";
-import {
-    SELECTED_NODE_CLASS,
-    createSelectionHighlight,
-    findSelectedBlock,
-    selectionHighlightKey
-} from "./selectionHighlight";
+import { SELECTED_NODE_CLASS, createSelectionHighlight, findSelectedBlock } from "./selectionHighlight";
 import { posOfText, posOfType, sampleDoc, schema } from "../__tests__/emailSchema";
 
 function stateWith(selectionAt) {
@@ -36,78 +31,26 @@ describe("findSelectedBlock", () => {
 });
 
 describe("selection highlight plugin", () => {
-    it("marks nothing until the user has been in the editor", () => {
-        const { plugin, state } = stateWith(doc => TextSelection.create(doc, posOfText(doc, "Left")));
-        expect(decorations(plugin, state)).toEqual([]);
-    });
-
-    it("then outlines the block around the cursor, and follows it", () => {
-        const { plugin, state } = stateWith(doc => TextSelection.create(doc, posOfText(doc, "Left")));
-        const active = state.apply(state.tr.setMeta(selectionHighlightKey, { active: true }));
-
-        const [first] = decorations(plugin, active);
-        expect(first.type.attrs.class).toBe(SELECTED_NODE_CLASS);
-        expect(active.doc.nodeAt(first.from).textContent).toBe("Left");
-
-        const right = TextSelection.create(active.doc, posOfText(active.doc, "Right"));
-        const moved = active.apply(active.tr.setSelection(right));
-        const [second] = decorations(plugin, moved);
-        expect(moved.doc.nodeAt(second.from).textContent).toBe("Right");
-    });
-
-    it("switches on when the editor gets focus, once", () => {
+    it("outlines the block holding the selection as soon as the template is loaded", () => {
         const { plugin, state } = stateWith(doc => TextSelection.create(doc, 3));
-        const view = { state };
-        view.dispatch = jest.fn(tr => {
-            view.state = view.state.apply(tr);
-        });
-
-        expect(plugin.props.handleDOMEvents.focus(view)).toBe(false);
-        plugin.props.handleDOMEvents.focus(view);
-        expect(view.dispatch).toHaveBeenCalledTimes(1);
-        expect(selectionHighlightKey.getState(view.state).active).toBe(true);
+        const [outline] = decorations(plugin, state);
+        expect(outline.type.attrs.class).toBe(SELECTED_NODE_CLASS);
+        expect(state.doc.nodeAt(outline.from).type.name).toBe("heading");
     });
 
-    it.each(["mousedown", "keydown"])("switches on with a %s in an editor that already had focus", event => {
-        const { plugin, state } = stateWith(doc => TextSelection.create(doc, 3));
-        const view = { state };
-        view.dispatch = jest.fn(tr => {
-            view.state = view.state.apply(tr);
-        });
-        plugin.props.handleDOMEvents[event](view);
-        expect(selectionHighlightKey.getState(view.state).active).toBe(true);
+    it("follows the cursor", () => {
+        const { plugin, state } = stateWith(doc => TextSelection.create(doc, posOfText(doc, "Left")));
+        expect(state.doc.nodeAt(decorations(plugin, state)[0].from).textContent).toBe("Left");
+
+        const right = TextSelection.create(state.doc, posOfText(state.doc, "Right"));
+        const moved = state.apply(state.tr.setSelection(right));
+        const outlines = decorations(plugin, moved);
+        expect(outlines).toHaveLength(1);
+        expect(moved.doc.nodeAt(outlines[0].from).textContent).toBe("Right");
     });
 
-    describe("when registered on an editor", () => {
-        beforeEach(() => jest.useFakeTimers());
-        afterEach(() => jest.useRealTimers());
-
-        function mountedView(hasFocus) {
-            const { plugin, state } = stateWith(doc => TextSelection.create(doc, 3));
-            const view = { state, isDestroyed: false, hasFocus: () => hasFocus };
-            view.dispatch = jest.fn(tr => {
-                view.state = view.state.apply(tr);
-            });
-            return { view, pluginView: plugin.spec.view(view) };
-        }
-
-        it("switches on if the editor already has focus, as React Email gives it on load", () => {
-            const { view } = mountedView(true);
-            jest.runAllTimers();
-            expect(selectionHighlightKey.getState(view.state).active).toBe(true);
-        });
-
-        it("stays off for an editor without focus", () => {
-            const { view } = mountedView(false);
-            jest.runAllTimers();
-            expect(view.dispatch).not.toHaveBeenCalled();
-        });
-
-        it("does nothing once removed again", () => {
-            const { view, pluginView } = mountedView(true);
-            pluginView.destroy();
-            jest.runAllTimers();
-            expect(view.dispatch).not.toHaveBeenCalled();
-        });
+    it("outlines a selected image", () => {
+        const { plugin, state } = stateWith(doc => NodeSelection.create(doc, posOfType(doc, "image")));
+        expect(state.doc.nodeAt(decorations(plugin, state)[0].from).type.name).toBe("image");
     });
 });
