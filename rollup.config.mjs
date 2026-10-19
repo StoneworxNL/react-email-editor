@@ -138,6 +138,36 @@ function useCommonjsThatConvertsExternals(plugins) {
 }
 
 /**
+ * Turn rem sizes in React Email's stylesheets into pixels.
+ *
+ * Those sizes assume the browser default of 16px per rem, but Atlas sets the
+ * root font size to 10px, so in a Mendix app the inspector, bubble menus and
+ * slash command came out at 62.5% of their size: 12px labels rendered at 7.5px.
+ * Fixed pixels make them look the same in any app. The widget's own stylesheet
+ * gets the same treatment, so a rem in it means the same as in React Email's.
+ */
+const REM_IN_PX = 16;
+const REM_STYLESHEETS = [/[\\/]@react-email[\\/]editor[\\/].*\.css$/, /[\\/]src[\\/]ui[\\/][^\\/]+\.css$/];
+
+function reactEmailRemToPx() {
+    return {
+        name: "react-email-rem-to-px",
+
+        transform(code, id) {
+            const file = id.split("?")[0];
+            if (!REM_STYLESHEETS.some(pattern => pattern.test(file))) {
+                return null;
+            }
+            const converted = code.replace(
+                /(^|[^\w.-])(\d*\.?\d+)rem\b/g,
+                (_match, before, value) => `${before}${parseFloat((parseFloat(value) * REM_IN_PX).toFixed(3))}px`
+            );
+            return { code: converted, map: null };
+        }
+    };
+}
+
+/**
  * Replace React Email's lazy Prism language import with a rejected promise.
  *
  * Nothing is lost that was not already lost: the languages Prism bundles are
@@ -185,7 +215,7 @@ function guardBundleOutput(externals) {
                 this.error(
                     `${chunk.fileName} contains ${computed.length} dynamic import(s) with a computed ` +
                         "specifier. Mendix's bundler cannot resolve one, so the app will not build — " +
-                        'it fails with \'invalid import "undefined"\'. Stub each one out in ' +
+                        "it fails with 'invalid import \"undefined\"'. Stub each one out in " +
                         `rollup.config.mjs the way the Prism language import is:\n${shown}`
                 );
             }
@@ -302,6 +332,7 @@ export default args =>
         const externals = Array.isArray(config.external) ? config.external : [];
         config.plugins = [
             reactDomServerForEitherReactBuild(),
+            reactEmailRemToPx(),
             dropJsxImportSourcePragma(),
             stubPrismLanguageImport(),
             ...useCommonjsThatConvertsExternals(config.plugins || []),
