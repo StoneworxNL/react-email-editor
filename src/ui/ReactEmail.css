@@ -461,3 +461,35 @@
         display: none;
     }
 }
+
+/* ------------------------------------------------------------ selection */
+
+/*
+ * The block being edited. An outline, not a border or background: it must not
+ * shift the layout or change how the email itself looks.
+ */
+.mxre-surface .tiptap .mxre-selected-node {
+    outline: 2px solid var(--mxre-selection, var(--mxre-accent, #2563eb));
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* The style panel's path to that block: wrap rather than truncate. */
+.mxre-breadcrumb [data-re-inspector-breadcrumb-list] {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+.mxre-breadcrumb .mxre-breadcrumb-current {
+    color: var(--mxre-selection, var(--mxre-accent, #2563eb));
+    font-weight: 600;
+}
+
+.mxre-breadcrumb-snippet {
+    margin: 4px 0 0;
+    overflow: hidden;
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
