@@ -380,7 +380,10 @@ export function EmailTemplateEditor(props) {
 
     const previewHtml = useMemo(() => {
         const filled = applyMobileLayout(substituteVariables(composed?.html ?? "", variables));
-        return previewScheme === "dark" ? darkPreviewHtml(filled, dark) : applyDarkMode(filled, dark);
+        // The light view leaves the dark rules out: the frame follows the viewer's
+        // own system setting, so with them a dark-mode computer would show the
+        // dark version under the light switch.
+        return previewScheme === "dark" ? darkPreviewHtml(filled, dark) : filled;
     }, [composed, variables, previewScheme, dark]);
 
     const previewNote =
