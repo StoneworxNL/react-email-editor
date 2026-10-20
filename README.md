@@ -145,7 +145,8 @@ Add a `dark` object to the custom theme to give them some:
 ```
 
 Parts: `body`, `container`, `surface` (panels inside the container), `h1`–`h3`,
-`paragraph`, `link`, `button`, `divider`; properties: `backgroundColor`,
+`paragraph`, `link`, `button`, `divider`, `code` (code blocks and inline code,
+which otherwise keep their light colours so syntax highlighting stays readable); properties: `backgroundColor`,
 `color`, `borderColor`. On save the widget tags the rendered elements by role
 and adds `color-scheme` meta tags and `prefers-color-scheme: dark` rules (plus
 Outlook's `[data-ogsc]`/`[data-ogsb]` variants), so Apple Mail, Outlook for Mac

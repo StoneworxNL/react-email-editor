@@ -105,6 +105,38 @@ describe("applyDarkMode", () => {
     });
 });
 
+describe("code in dark mode", () => {
+    // React Email writes code backgrounds with the `background` shorthand and
+    // colours each syntax token with its own inline colour.
+    const WITH_CODE = `<!DOCTYPE html><html><head></head><body style="background-color:#f4f5f6">
+<table style="max-width:600px;background-color:#ffffff"><tbody><tr><td>
+<p style="color:#2e3135">Run <code style="background:#e5e7eb;color:#1e293b">npm test</code> first.</p>
+<pre style="background:#f1f5f9;padding:12px"><code style="font-family:monospace"><span style="color:#d73a49">const</span> <span style="color:#005cc5">x</span> = 1;</code></pre>
+<div style="background:#f6f9fc"><p style="color:#2e3135">Panel</p></div>
+</td></tr></tbody></table></body></html>`;
+
+    it("keeps syntax colours and the block's own background unless code colours are set", () => {
+        const doc = parse(applyDarkMode(WITH_CODE, DARK));
+        expect([...doc.querySelector("pre").classList]).toEqual(["rem-dark-code"]);
+        expect([...doc.querySelector("p code").classList]).toEqual(["rem-dark-code"]);
+        // Token spans are left alone: recolouring them light on the light block made them unreadable.
+        expect(doc.querySelectorAll("pre span[class]")).toHaveLength(0);
+        expect(doc.querySelector("head style").textContent).not.toContain(".rem-dark-code");
+    });
+
+    it("applies code colours when the theme sets them", () => {
+        const css = parse(
+            applyDarkMode(WITH_CODE, { ...DARK, code: { backgroundColor: "#1b5169", color: "#f3f4f5" } })
+        ).querySelector("head style").textContent;
+        expect(css).toContain(".rem-dark-code{background-color:#1b5169 !important;color:#f3f4f5 !important}");
+    });
+
+    it("recognises panels whose background is written as the shorthand", () => {
+        const doc = parse(applyDarkMode(WITH_CODE, DARK));
+        expect([...doc.querySelector("div[style*='#f6f9fc']").classList]).toEqual(["rem-dark-surface"]);
+    });
+});
+
 describe("darkPreviewHtml", () => {
     it("forces the designed dark colours on, whatever the viewer's own setting", () => {
         const css = parse(darkPreviewHtml(EMAIL, DARK)).querySelector('style[data-preview="dark"]').textContent;

@@ -23,7 +23,8 @@ export const DARK_PARTS = {
     paragraph: ["color"],
     link: ["color"],
     button: ["backgroundColor", "color", "borderColor"],
-    divider: ["borderColor"]
+    divider: ["borderColor"],
+    code: ["backgroundColor", "color"]
 };
 
 const CSS_NAMES = { backgroundColor: "background-color", color: "color", borderColor: "border-color" };
@@ -81,6 +82,12 @@ function hasInline(element, property) {
     return new RegExp(`(^|;)\\s*${property}\\s*:`, "i").test(element.getAttribute("style") ?? "");
 }
 
+// React Email writes some backgrounds as the `background` shorthand (code
+// blocks, inline code), others as `background-color`.
+function hasBackground(element) {
+    return hasInline(element, "background-color") || hasInline(element, "background");
+}
+
 /** Give each element of the rendered email a class naming its role. */
 function tagRoles(doc) {
     const tag = (element, part) => element.classList.add(PREFIX + part);
@@ -89,7 +96,15 @@ function tagRoles(doc) {
     for (const element of doc.body.querySelectorAll("[style]")) {
         const name = element.tagName.toLowerCase();
         const style = element.getAttribute("style") ?? "";
-        if (/max-width\s*:\s*\d/i.test(style) && name === "table") {
+        const isCode = name === "pre" || (name === "code" && !element.closest("pre"));
+        if (!isCode && element.parentElement?.closest("pre, code")) {
+            // Syntax-highlighting colours belong to their code block's own
+            // background, which stays light unless the theme sets "code".
+            continue;
+        }
+        if (isCode) {
+            tag(element, "code");
+        } else if (/max-width\s*:\s*\d/i.test(style) && name === "table") {
             tag(element, "container");
         } else if (name === "h1" || name === "h2" || name === "h3") {
             tag(element, name);
@@ -98,10 +113,10 @@ function tagRoles(doc) {
         } else if (name === "p" || name === "li") {
             tag(element, "paragraph");
         } else if (name === "a") {
-            tag(element, hasInline(element, "background-color") ? "button" : "link");
+            tag(element, hasBackground(element) ? "button" : "link");
         } else if (name === "hr") {
             tag(element, "divider");
-        } else if (hasInline(element, "background-color")) {
+        } else if (hasBackground(element)) {
             // The first such cell carries the body background; later ones are panels.
             tag(element, element.closest(`.${PREFIX}container`) ? "surface" : "body");
         } else if (hasInline(element, "color")) {
