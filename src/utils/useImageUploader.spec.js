@@ -72,6 +72,25 @@ describe("useImageUploader", () => {
             expect(url.setValue).toHaveBeenNthCalledWith(1, "");
         });
 
+        it("does not take the previous image's URL, still readable before Mendix re-renders, as the answer", async () => {
+            const url = attribute("https://files.example.com/old.png");
+            // The clearing write is not visible yet: reads still return the old URL.
+            url.setValue.mockImplementation(() => undefined);
+            const upload = action();
+            upload.execute.mockImplementation(() =>
+                setTimeout(() => {
+                    url.value = "https://files.example.com/new.png";
+                }, 300)
+            );
+            const { result } = setup({
+                mode: "microflow",
+                imageDataAttribute: attribute(""),
+                imageUrlAttribute: url,
+                onImageUpload: upload
+            });
+            await expect(result.current(file)).resolves.toEqual({ url: "https://files.example.com/new.png" });
+        });
+
         it("gives up after the timeout", async () => {
             const { result, onError } = setup({
                 mode: "microflow",

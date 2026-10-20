@@ -93,6 +93,8 @@ function tagRoles(doc) {
             tag(element, "container");
         } else if (name === "h1" || name === "h2" || name === "h3") {
             tag(element, name);
+        } else if (/^h[4-6]$/.test(name)) {
+            tag(element, "h3");
         } else if (name === "p" || name === "li") {
             tag(element, "paragraph");
         } else if (name === "a") {
@@ -102,6 +104,10 @@ function tagRoles(doc) {
         } else if (hasInline(element, "background-color")) {
             // The first such cell carries the body background; later ones are panels.
             tag(element, element.closest(`.${PREFIX}container`) ? "surface" : "body");
+        } else if (hasInline(element, "color")) {
+            // Any other text with its own light-theme colour (a span, a column
+            // cell, a footer line) would stay dark on the dark background.
+            tag(element, "paragraph");
         }
     }
 }

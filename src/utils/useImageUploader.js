@@ -33,6 +33,7 @@ async function uploadViaMicroflow(file, config) {
 
     // Clear the result first so we can wait for it to be filled, and so that
     // uploading the same file twice is still detected as a new result.
+    const previousUrl = readString(imageUrlAttribute);
     writeString(imageUrlAttribute, "");
 
     const dataUrl = await readAsDataUrl(file);
@@ -48,6 +49,10 @@ async function uploadViaMicroflow(file, config) {
     const timeoutMs = Math.max(1, config.timeoutSeconds ?? 30) * 1000;
     const deadline = Date.now() + timeoutMs;
 
+    // Mendix applies the clearing on its next render, so for a moment the old
+    // URL can still be read back. Only accept a URL once the cleared value has
+    // been seen, or one that differs from the old URL.
+    let sawCleared = false;
     return new Promise((resolve, reject) => {
         const timer = setInterval(() => {
             if (config.isCancelled()) {
@@ -56,7 +61,9 @@ async function uploadViaMicroflow(file, config) {
                 return;
             }
             const url = readString(config.getLatest().imageUrlAttribute);
-            if (url !== "") {
+            if (url === "") {
+                sawCleared = true;
+            } else if (sawCleared || url !== previousUrl) {
                 clearInterval(timer);
                 resolve({ url });
                 return;

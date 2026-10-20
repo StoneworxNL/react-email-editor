@@ -12,6 +12,8 @@ const EMAIL = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "h
 <ul><li style="color:#2e3135">One</li></ul>
 <a href="https://example.com/contact" style="background-color:#0089ab;color:#ffffff;display:inline-block">Contact us</a>
 <hr style="border-top:1px solid #eaeaea"/>
+<h4 style="color:#8a8a8a">Kicker</h4>
+<td style="color:#2e3135">Column text</td><span style="color:#5a5c61">Footer</span>
 </td></tr></tbody></table>
 </td></tr></tbody></table>
 </body></html>`;
@@ -80,6 +82,9 @@ describe("applyDarkMode", () => {
         expect(roleOf("p a")).toBe("rem-dark-link");
         expect(roleOf("a[style*='background-color']")).toBe("rem-dark-button");
         expect(roleOf("hr")).toBe("rem-dark-divider");
+        expect(roleOf("h4")).toBe("rem-dark-h3");
+        // Other text with its own light colour would be dark on dark otherwise.
+        expect(roleOf("span[style*='#5a5c61']")).toBe("rem-dark-paragraph");
     });
 
     it("tells mail apps the email supports dark mode and adds the dark rules under the media query", () => {

@@ -159,7 +159,9 @@ function reactEmailRemToPx() {
                 return null;
             }
             const converted = code.replace(
-                /(^|[^\w.-])(\d*\.?\d+)rem\b/g,
+                // A leading minus belongs to the number (margin: -0.5rem), but not
+                // after a word character, where it is part of a name (--gap-1rem).
+                /(^|[^\w.-]|[^\w.]-)(\d*\.?\d+)rem\b/g,
                 (_match, before, value) => `${before}${parseFloat((parseFloat(value) * REM_IN_PX).toFixed(3))}px`
             );
             return { code: converted, map: null };
