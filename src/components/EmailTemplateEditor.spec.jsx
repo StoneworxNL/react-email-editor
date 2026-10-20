@@ -329,6 +329,61 @@ describe("EmailTemplateEditor", () => {
         });
     });
 
+    it("keeps edits made while a save was rendering marked as unsaved", async () => {
+        const props = makeProps();
+        let finishRender;
+        mockRef.getEmail = jest.fn(
+            () =>
+                new Promise(resolve => {
+                    finishRender = () => resolve({ html: "<p>Hello</p>", text: "Hello" });
+                })
+        );
+        render(<EmailTemplateEditor {...props} />);
+        await screen.findByTestId("surface");
+        edit();
+
+        fireEvent.click(screen.getByRole("button", { name: /save/i }));
+        // The user keeps typing while React Email renders the email.
+        const later = {
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Hello again" }] }]
+        };
+        mockRef.doc = later;
+        await act(async () => {
+            finishRender();
+            await Promise.resolve();
+        });
+
+        expect(JSON.parse(props.documentAttribute.value)).toEqual(EDITED);
+        expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    });
+
+    it("does not save automatically over a version changed elsewhere", async () => {
+        jest.useFakeTimers();
+        try {
+            const props = makeProps({ saveMode: "auto", autoSaveDelay: 500 });
+            const { rerender } = render(<EmailTemplateEditor {...props} />);
+            await act(async () => {});
+            edit();
+
+            const other = {
+                type: "doc",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Theirs" }] }]
+            };
+            const theirs = attribute(JSON.stringify(other));
+            rerender(<EmailTemplateEditor {...props} documentAttribute={theirs} />);
+            await act(async () => {
+                await jest.advanceTimersByTimeAsync(2000);
+            });
+
+            expect(screen.getByText(/changed elsewhere/)).toBeInTheDocument();
+            expect(theirs.setValue).not.toHaveBeenCalled();
+            expect(props.onSaveAction.execute).not.toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     it("asks before a reload throws away unsaved work", async () => {
         render(<EmailTemplateEditor {...makeProps()} />);
         await screen.findByTestId("surface");

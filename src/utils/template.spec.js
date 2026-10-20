@@ -153,7 +153,18 @@ describe("substituteVariables", () => {
     });
 
     it("keeps dollar signs in sample values literal", () => {
-        expect(substituteVariables("{%Order.Total%}", [{ ...byToken, sample: "$& $1" }])).toBe("$& $1");
+        expect(substituteVariables("{%Order.Total%}", [{ ...byToken, sample: "$` $1 $$" }])).toBe("$` $1 $$");
+    });
+
+    it("escapes sample values, so markup in them shows as text", () => {
+        expect(substituteVariables("{%FirstName%}", [{ ...byName, sample: "<b>Ada</b> & co" }])).toBe(
+            "&lt;b&gt;Ada&lt;/b&gt; &amp; co"
+        );
+    });
+
+    it("finds tokens whose delimiters the rendered HTML escaped", () => {
+        const angle = { name: "FirstName", prefix: "<%", suffix: "%>", token: "<%FirstName%>", sample: "Ada" };
+        expect(substituteVariables("Hi &lt;%FirstName%&gt;", [angle])).toBe("Hi Ada");
     });
 
     it("leaves tokens without a sample alone", () => {

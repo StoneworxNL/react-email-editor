@@ -156,6 +156,10 @@
                     <enumerationValue key="disabled">Do not allow images</enumerationValue>
                 </enumerationValues>
             </property>
+            <property key="imageMaxSize" type="integer" defaultValue="2048">
+                <caption>Maximum image size (KB)</caption>
+                <description>Images larger than this are refused, and only image files are accepted. Applies to data URL and microflow uploads; 0 means no limit. Large images end up in the template and in every email sent.</description>
+            </property>
             <property key="imageDataAttribute" type="attribute" required="false">
                 <caption>Upload: image data</caption>
                 <description>String attribute that receives the base64 encoded file, without the data URL prefix, before the upload action runs.</description>

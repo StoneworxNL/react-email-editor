@@ -81,7 +81,7 @@ export function Toolbar({
                     className="mxre-button"
                     disabled={saving}
                     onClick={onReload}
-                    title="Reload the template from the database, discarding unsaved changes"
+                    title="Reload the template from the page's data, discarding unsaved changes"
                     type="button"
                 >
                     <RefreshIcon />

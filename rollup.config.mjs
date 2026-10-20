@@ -238,7 +238,7 @@ function guardBundleOutput(externals) {
                     `${chunk.fileName} contains unconverted require() call(s) for external module(s): ` +
                         `${[...leftover].join(", ")}. There is no require in the ESM bundle the Mendix ` +
                         "React client loads, so the page dies on load with 'ReferenceError: require is " +
-                        "not defined'. The import-externals-instead-of-require plugin should have " +
+                        "not defined'. useCommonjsThatConvertsExternals() in rollup.config.mjs should have " +
                         "rewritten these."
                 );
             }

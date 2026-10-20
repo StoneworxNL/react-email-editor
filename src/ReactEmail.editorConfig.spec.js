@@ -7,7 +7,7 @@ const base = {
     heightMode: "fixed",
     heightValue: 640,
     themePreset: "basic",
-    imageMode: "dataUrl",
+    imageMode: "promptUrl",
     autoSaveDelay: 800
 };
 
@@ -43,6 +43,10 @@ describe("check", () => {
             "error:imageUrlAttribute",
             "error:onImageUpload"
         ]);
+    });
+
+    it("warns that data URL images do not survive most mail clients", () => {
+        expect(problemsFor({ imageMode: "dataUrl" })).toEqual(["warning:imageMode"]);
     });
 
     it("flags a cramped height and a negative delay", () => {
