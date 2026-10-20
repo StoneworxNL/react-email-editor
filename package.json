@@ -6,7 +6,7 @@
     "copyright": "© Stoneworx 2026. All rights reserved.",
     "author": "João Lopes",
     "engines": {
-        "node": ">=20"
+        "node": ">=22.18.0 <23"
     },
     "license": "Apache-2.0",
     "config": {

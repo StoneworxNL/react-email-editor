@@ -224,7 +224,7 @@ Two smaller traps, both handled in the config:
 
 ## Development
 
-1. `npm install`
+1. `npm install` (Node 22.18 or newer, below 23: what pluggable-widgets-tools 11.12 requires)
 2. `npm start` rebuilds on every change into the `dist`, `deployment` and
    `widgets` folders of the Mendix project above.
 3. `npm run lint` / `npm run lint:fix`

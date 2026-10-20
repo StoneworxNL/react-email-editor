@@ -12,7 +12,8 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
               with:
-                  node-version: 20
+                  # pluggable-widgets-tools 11.12 requires >=22.18.0 <23.
+                  node-version: 22
                   cache: npm
             - run: npm ci
             - run: npm run lint
