@@ -224,7 +224,7 @@ Two smaller traps, both handled in the config:
 
 ## Future work
 
-From Rui's feature-gap analysis for the Marketplace release. There is no
+From a feature-gap analysis for the Marketplace release. There is no
 drag-and-drop email builder on the Marketplace; the Email Connector edits
 templates with the generic Rich Text widget. So the widget is worth publishing
 as it is, and the items below are about becoming the default choice, not about
