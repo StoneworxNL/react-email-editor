@@ -108,11 +108,13 @@ describe("useImageUploader", () => {
             // The clearing write is not visible yet: reads still return the old URL.
             url.setValue.mockImplementation(() => undefined);
             const upload = action();
-            upload.execute.mockImplementation(() =>
+            upload.execute.mockImplementation(() => {
+                upload.isExecuting = true;
                 setTimeout(() => {
                     url.value = "https://files.example.com/new.png";
-                }, 300)
-            );
+                    upload.isExecuting = false;
+                }, 300);
+            });
             const { result } = setup({
                 mode: "microflow",
                 imageDataAttribute: attribute(""),
@@ -123,11 +125,16 @@ describe("useImageUploader", () => {
         });
 
         it("gives up after the timeout", async () => {
+            // An action that keeps running and never fills the URL.
+            const stuck = action();
+            stuck.execute.mockImplementation(() => {
+                stuck.isExecuting = true;
+            });
             const { result, onError } = setup({
                 mode: "microflow",
                 imageDataAttribute: attribute(""),
                 imageUrlAttribute: attribute(""),
-                onImageUpload: action(),
+                onImageUpload: stuck,
                 timeoutSeconds: 1
             });
             await expect(result.current(file)).rejects.toThrow("did not return a URL within 1 seconds");
