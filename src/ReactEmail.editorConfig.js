@@ -102,6 +102,10 @@ export function getProperties(values, defaultProperties, _target) {
         ]);
     }
 
+    if (values.imageMode === "disabled" || values.imageMode === "promptUrl") {
+        hideProperty(groups, "imageMaxSize");
+    }
+
     if (!values.onSendTestAction) {
         hideProperty(groups, "sendTestCaption");
     }
@@ -199,6 +203,16 @@ export function check(values) {
                 url: DOCS_URL
             });
         }
+    }
+
+    if (values.imageMode === "dataUrl") {
+        errors.push({
+            property: "imageMode",
+            severity: "warning",
+            message:
+                "Images are embedded as data URLs: they are stored inside every template and many email clients will not show them. Use Upload via microflow, or Ask for a URL, for emails you send.",
+            url: DOCS_URL
+        });
     }
 
     if (values.heightMode === "fixed" && values.heightValue && values.heightValue < 320) {

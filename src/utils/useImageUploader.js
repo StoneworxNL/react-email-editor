@@ -13,6 +13,36 @@ function readAsDataUrl(file) {
     });
 }
 
+/** Refuse files that are not images, or larger than the configured limit. */
+export function checkImageFile(file, maxSizeKb) {
+    if (!file || typeof file.type !== "string" || !file.type.startsWith("image/")) {
+        throw new Error("Only image files can be added to the email.");
+    }
+    const limit = Number(maxSizeKb);
+    if (limit > 0 && file.size > limit * 1024) {
+        const sizeKb = Math.round(file.size / 1024);
+        throw new Error(`The image is ${sizeKb} KB; the limit is ${limit} KB. Use a smaller or compressed image.`);
+    }
+}
+
+/** Accept only an absolute https address for "Ask for a URL". */
+export function checkImageUrl(value) {
+    const text = (value ?? "").trim();
+    if (text === "" || text === "https://") {
+        throw new Error("No image URL was given.");
+    }
+    let url;
+    try {
+        url = new URL(text);
+    } catch {
+        throw new Error("That is not a valid image URL.");
+    }
+    if (url.protocol !== "https:") {
+        throw new Error("Only https:// image URLs are allowed.");
+    }
+    return url.href;
+}
+
 /** Strip the `data:image/png;base64,` prefix that Mendix does not want. */
 function toBase64(dataUrl) {
     const comma = dataUrl.indexOf(",");
@@ -53,6 +83,13 @@ async function uploadViaMicroflow(file, config) {
     // URL can still be read back. Only accept a URL once the cleared value has
     // been seen, or one that differs from the old URL.
     let sawCleared = false;
+    // The action runs on the server; when it ends without filling the URL (it
+    // failed, or chose not to store the file), say so instead of waiting out
+    // the timeout. A couple of polls of grace let the attribute catch up after
+    // it was seen running; an action that fails faster than the first poll is
+    // never seen running, so allow a little longer for that.
+    let sawRunning = false;
+    let idlePolls = 0;
     return new Promise((resolve, reject) => {
         const timer = setInterval(() => {
             if (config.isCancelled()) {
@@ -66,6 +103,15 @@ async function uploadViaMicroflow(file, config) {
             } else if (sawCleared || url !== previousUrl) {
                 clearInterval(timer);
                 resolve({ url });
+                return;
+            }
+            const running = Boolean(config.getLatest().onImageUpload?.isExecuting);
+            if (running) {
+                sawRunning = true;
+                idlePolls = 0;
+            } else if (++idlePolls > (sawRunning ? 2 : 5)) {
+                clearInterval(timer);
+                reject(new Error("The upload action finished without returning an image URL. Check it for errors."));
                 return;
             }
             if (Date.now() > deadline) {
@@ -111,11 +157,10 @@ export function useImageUploader(config) {
                     // no-back-end option for images that are already hosted.
                     // eslint-disable-next-line no-alert
                     const url = window.prompt("Image URL", "https://");
-                    if (!url || url.trim() === "" || url.trim() === "https://") {
-                        throw new Error("No image URL was given.");
-                    }
-                    return { url: url.trim() };
+                    return { url: checkImageUrl(url) };
                 }
+
+                checkImageFile(file, latest.current.maxSizeKb);
 
                 if (mode === "microflow") {
                     const upload = queueRef.current.then(() =>

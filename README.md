@@ -87,13 +87,24 @@ sends the email with the Email Connector. **Send test caption** sets its label.
 
 ### Images
 
-- **Embed as data URL** (default) needs no back end, but many email clients
-  refuse to render data URLs. Fine for prototyping.
-- **Ask for a URL** prompts for the address of an image you already host.
+- **Embed as data URL** (default) needs no back end, but the image is stored in
+  every template and many email clients refuse to render data URLs. Fine for
+  prototyping; Studio Pro warns when it is selected.
+- **Ask for a URL** prompts for the address of an image you already host. Only
+  absolute `https://` addresses are accepted.
 - **Upload via microflow** is the production option. The widget writes the
   base64 file into an attribute, optionally the file name into another, then
   runs your action and waits for a third attribute to be filled with the public
-  URL of the stored image. It gives up after the configured timeout.
+  URL of the stored image. It stops when the action finishes without a URL, and
+  gives up after the configured timeout.
+
+**Maximum image size** (2048 KB by default, 0 for no limit) refuses larger
+files, and only image files are accepted, for data URLs and microflow uploads.
+
+> **Validate uploads in your microflow.** The base64 data and the file name come
+> from the user's browser and can be anything. Before storing, check the decoded
+> file's real type (not the name's extension) and size, and sanitise or replace
+> the file name.
 
 ### Theming
 
@@ -151,8 +162,11 @@ change is stored in the template document, not in this setting.
 ## Notes and limits
 
 - The widget is web-only; the editor depends on the DOM.
-- The bundle is large (~3 MB minified) because React Email renders the email in
-  the browser. Expect a noticeable first load on a cold cache.
+- The bundle is large: about 3.2 MB of minified JavaScript, a 2 MB `.mpk`.
+  React Email renders the email in the browser, and the widget carries both the
+  development and production builds of `react-dom/server` so it works on a
+  locally run app and a deployed one. Expect a noticeable first load on a cold
+  cache.
 - Code blocks fall back to highlighting as JavaScript for languages Prism does
   not bundle. React Email lazy-loads those grammars with
   ``import(`prismjs/components/prism-${language}`)``, and a dynamic import whose

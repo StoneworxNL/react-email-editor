@@ -32,6 +32,37 @@ describe("useImageUploader", () => {
         await expect(result.current(file)).resolves.toEqual({ url: "https://cdn.example.com/a.png" });
     });
 
+    it.each([
+        ["http://cdn.example.com/a.png", "Only https:// image URLs are allowed."],
+        // Built up so the linter does not take the test value for a script URL.
+        [["javascript", "alert(1)"].join(":"), "Only https:// image URLs are allowed."],
+        ["data:image/png;base64,AAAA", "Only https:// image URLs are allowed."],
+        ["not a url", "That is not a valid image URL."]
+    ])("refuses %s in Ask for a URL", async (given, message) => {
+        jest.spyOn(window, "prompt").mockReturnValue(given);
+        const { result } = setup({ mode: "promptUrl" });
+        await expect(result.current(file)).rejects.toThrow(message);
+    });
+
+    it("refuses images over the size limit", async () => {
+        const big = new File([new Uint8Array(3 * 1024)], "big.png", { type: "image/png" });
+        const { result, onError } = setup({ mode: "dataUrl", maxSizeKb: 2 });
+        await expect(result.current(big)).rejects.toThrow("The image is 3 KB; the limit is 2 KB.");
+        expect(onError).toHaveBeenCalled();
+    });
+
+    it("refuses files that are not images", async () => {
+        const pdf = new File(["%PDF"], "doc.pdf", { type: "application/pdf" });
+        const { result } = setup({ mode: "dataUrl", maxSizeKb: 2048 });
+        await expect(result.current(pdf)).rejects.toThrow("Only image files can be added to the email.");
+    });
+
+    it("has no size limit at 0", async () => {
+        const big = new File([new Uint8Array(3 * 1024)], "big.png", { type: "image/png" });
+        const { result } = setup({ mode: "dataUrl", maxSizeKb: 0 });
+        await expect(result.current(big)).resolves.toEqual({ url: expect.stringMatching(/^data:image\/png/) });
+    });
+
     it("reports a cancelled URL prompt", async () => {
         jest.spyOn(window, "prompt").mockReturnValue("https://");
         const { result, onError } = setup({ mode: "promptUrl" });
@@ -150,6 +181,26 @@ describe("useImageUploader", () => {
             const pending = result.current(file);
             unmount();
             await expect(pending).rejects.toThrow("closed before the upload finished");
+        });
+
+        it("stops waiting when the upload action ends without a URL", async () => {
+            const upload = action();
+            upload.execute.mockImplementation(() => {
+                upload.isExecuting = true;
+                setTimeout(() => {
+                    upload.isExecuting = false;
+                }, 100);
+            });
+            const { result } = setup({
+                mode: "microflow",
+                imageDataAttribute: attribute(""),
+                imageUrlAttribute: attribute(""),
+                onImageUpload: upload,
+                timeoutSeconds: 30
+            });
+            const started = Date.now();
+            await expect(result.current(file)).rejects.toThrow("finished without returning an image URL");
+            expect(Date.now() - started).toBeLessThan(3000);
         });
 
         it("explains a missing configuration", async () => {

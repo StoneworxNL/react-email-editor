@@ -55,6 +55,11 @@ export function resolveSource(documentValue, htmlValue) {
     return { kind: "empty", content: "", signature: "empty:" };
 }
 
+/** The text as it appears in rendered HTML: React Email escapes these characters. */
+export function escapeHtml(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function escapeRegExp(text) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -77,16 +82,19 @@ export function substituteVariables(html, variables) {
         if (variable.sample === undefined) {
             return result;
         }
-        const pattern = variable.name
-            ? new RegExp(
-                  `${escapeRegExp(variable.prefix)}\\s*${escapeRegExp(variable.name)}\\s*${escapeRegExp(
-                      variable.suffix
-                  )}`,
-                  "g"
-              )
-            : new RegExp(escapeRegExp(variable.token), "g");
+        // The HTML is rendered, so a token containing <, > or & appears escaped
+        // in it: match both forms. The sample is escaped going in, so a "<" in
+        // it shows as text instead of breaking the layout.
+        const form = escape => {
+            const part = text => escapeRegExp(escape(text));
+            return variable.name
+                ? `${part(variable.prefix)}\\s*${part(variable.name)}\\s*${part(variable.suffix)}`
+                : part(variable.token);
+        };
+        const pattern = new RegExp(`${form(text => text)}|${form(escapeHtml)}`, "g");
+        const sample = escapeHtml(variable.sample);
         // A function replacement keeps `$` in sample values literal.
-        return result.replace(pattern, () => variable.sample);
+        return result.replace(pattern, () => sample);
     }, html);
 }
 

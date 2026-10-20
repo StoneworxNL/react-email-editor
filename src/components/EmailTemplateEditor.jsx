@@ -1,7 +1,6 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
 import { applyDarkMode, darkPreviewHtml } from "../utils/darkMode";
-import { applyMobileLayout } from "../utils/mobileLayout";
 import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
@@ -11,6 +10,7 @@ import { NodeBreadcrumb } from "./NodeBreadcrumb";
 import { PreviewPane } from "./PreviewPane";
 import { SelectionHighlight } from "./SelectionHighlight";
 import { Toolbar } from "./Toolbar";
+import { applyMobileLayout } from "../utils/mobileLayout";
 import classNames from "classnames";
 import { resolveTheme } from "../utils/theme";
 import { useImageUploader } from "../utils/useImageUploader";
@@ -109,6 +109,7 @@ export function EmailTemplateEditor(props) {
     const dirty = docDirty || subjectDirty;
 
     const dirtyRef = useLatest(dirty);
+    const externalChangeRef = useLatest(externalChange);
     const subjectRef = useLatest(subject);
 
     // ------------------------------------------------------------- appearance
@@ -145,6 +146,7 @@ export function EmailTemplateEditor(props) {
         imageUrlAttribute: props.imageUrlAttribute,
         onImageUpload: props.onImageUpload,
         timeoutSeconds: props.imageUploadTimeout,
+        maxSizeKb: props.imageMaxSize,
         onError: setError
     });
 
@@ -178,7 +180,9 @@ export function EmailTemplateEditor(props) {
 
                 baselineRef.current = documentJson;
                 lastHtmlRef.current = html;
-                setDocDirty(false);
+                // Rendering takes a while and the user may have kept typing: only
+                // what was serialised above is saved, so anything newer stays dirty.
+                setDocDirty(serializeDocument(ref.getJSON()) !== documentJson);
                 setSubjectDraft(null);
                 setExternalChange(false);
                 setSavedAt(new Date());
@@ -219,11 +223,19 @@ export function EmailTemplateEditor(props) {
         const delay = Math.max(0, autoSaveDelay ?? 800);
         idleTimerRef.current = window.setTimeout(async () => {
             if (saveMode === "auto") {
-                await persist({ runSaveAction: true });
+                // While the "changed elsewhere" banner is up, the user decides:
+                // saving now would overwrite the other version unseen.
+                if (externalChangeRef.current) {
+                    return;
+                }
+                const saved = await persist({ runSaveAction: true });
+                if (!saved) {
+                    return;
+                }
             }
             executeAction(onChangeAction);
         }, delay);
-    }, [autoSaveDelay, saveMode, persist, onChangeAction]);
+    }, [autoSaveDelay, saveMode, persist, onChangeAction, externalChangeRef]);
 
     useEffect(() => () => window.clearTimeout(idleTimerRef.current), []);
 
@@ -268,7 +280,9 @@ export function EmailTemplateEditor(props) {
         }
         if (loaded && dirtyRef.current) {
             // Someone else changed the template while this user was editing it.
-            // Never silently discard their work: let them choose.
+            // Never silently discard their work: let them choose. A pending
+            // automatic save would make that choice for them, so cancel it.
+            window.clearTimeout(idleTimerRef.current);
             setExternalChange(true);
             return;
         }
