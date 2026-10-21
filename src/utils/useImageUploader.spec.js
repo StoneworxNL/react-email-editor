@@ -54,7 +54,21 @@ describe("useImageUploader", () => {
     it("refuses files that are not images", async () => {
         const pdf = new File(["%PDF"], "doc.pdf", { type: "application/pdf" });
         const { result } = setup({ mode: "dataUrl", maxSizeKb: 2048 });
-        await expect(result.current(pdf)).rejects.toThrow("Only image files can be added to the email.");
+        await expect(result.current(pdf)).rejects.toThrow(
+            "Only PNG, JPEG, GIF and WebP images can be added to the email."
+        );
+    });
+
+    it("refuses SVG, which can carry script", async () => {
+        const svg = new File(["<svg onload='alert(1)'/>"], "logo.svg", { type: "image/svg+xml" });
+        const { result } = setup({ mode: "dataUrl", maxSizeKb: 2048 });
+        await expect(result.current(svg)).rejects.toThrow("Only PNG, JPEG, GIF and WebP");
+    });
+
+    it.each(["image/png", "image/jpeg", "image/gif", "image/webp"])("accepts %s", async type => {
+        const image = new File(["x"], "image", { type });
+        const { result } = setup({ mode: "dataUrl", maxSizeKb: 2048 });
+        await expect(result.current(image)).resolves.toEqual({ url: expect.stringMatching(/^data:/) });
     });
 
     it("has no size limit at 0", async () => {
@@ -208,6 +222,24 @@ describe("useImageUploader", () => {
             const started = Date.now();
             await expect(result.current(file)).rejects.toThrow("finished without returning an image URL");
             expect(Date.now() - started).toBeLessThan(3000);
+        });
+
+        it("waits for a URL set from a page the action opened, after the action finished", async () => {
+            const url = attribute("");
+            const upload = action();
+            // The action only opens a page and ends; the page sets the URL later.
+            upload.execute.mockImplementation(() => {
+                setTimeout(() => url.setValue("https://files.example.com/cropped.png"), 1500);
+            });
+            const { result } = setup({
+                mode: "microflow",
+                imageDataAttribute: attribute(""),
+                imageUrlAttribute: url,
+                onImageUpload: upload,
+                waitForUrl: true,
+                timeoutSeconds: 10
+            });
+            await expect(result.current(file)).resolves.toEqual({ url: "https://files.example.com/cropped.png" });
         });
 
         it("explains a missing configuration", async () => {

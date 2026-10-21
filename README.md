@@ -87,19 +87,23 @@ sends the email with the Email Connector. **Send test caption** sets its label.
 
 ### Images
 
-- **Embed as data URL** (default) needs no back end, but the image is stored in
-  every template and many email clients refuse to render data URLs. Fine for
+- **Ask for a URL** (default) prompts for the address of an image you already
+  host. Only absolute `https://` addresses are accepted.
+- **Embed as data URL** needs no back end, but the image is stored in every
+  template and many email clients refuse to render data URLs. Fine for
   prototyping; Studio Pro warns when it is selected.
-- **Ask for a URL** prompts for the address of an image you already host. Only
-  absolute `https://` addresses are accepted.
 - **Upload via microflow** is the production option. The widget writes the
   base64 file into an attribute, optionally the file name into another, then
   runs your action and waits for a third attribute to be filled with the public
-  URL of the stored image. It stops when the action finishes without a URL, and
-  gives up after the configured timeout.
+  URL of the stored image. By default it reports an error as soon as the action
+  finishes without setting the URL, so the action must set it before it ends.
+  If the action opens a page (for alt text, cropping or picking from a library)
+  and the URL is set from there, turn on **Upload action opens a page**: the
+  widget then waits until the timeout.
 
 **Maximum image size** (2048 KB by default, 0 for no limit) refuses larger
-files, and only image files are accepted, for data URLs and microflow uploads.
+files. Only PNG, JPEG, GIF and WebP are accepted, for data URLs and microflow
+uploads: SVG can carry script, and Gmail and Outlook do not show it.
 
 > **Validate uploads in your microflow.** The base64 data and the file name come
 > from the user's browser and can be anything. Before storing, check the decoded
@@ -145,8 +149,10 @@ Add a `dark` object to the custom theme to give them some:
 ```
 
 Parts: `body`, `container`, `surface` (panels inside the container), `h1`–`h3`,
-`paragraph`, `link`, `button`, `divider`, `code` (code blocks and inline code,
-which otherwise keep their light colours so syntax highlighting stays readable); properties: `backgroundColor`,
+`paragraph`, `link`, `button`, `divider`, `code` (code blocks and inline code;
+without it they keep their light colours, so syntax highlighting stays
+readable; with a `code.color`, every token takes that one colour, because the
+highlighting colours are made for a light block); properties: `backgroundColor`,
 `color`, `borderColor`. On save the widget tags the rendered elements by role
 and adds `color-scheme` meta tags and `prefers-color-scheme: dark` rules (plus
 Outlook's `[data-ogsc]`/`[data-ogsb]` variants), so Apple Mail, Outlook for Mac

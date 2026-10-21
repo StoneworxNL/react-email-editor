@@ -146,7 +146,7 @@
         </propertyGroup>
 
         <propertyGroup caption="Images">
-            <property key="imageMode" type="enumeration" defaultValue="dataUrl">
+            <property key="imageMode" type="enumeration" defaultValue="promptUrl">
                 <caption>Image handling</caption>
                 <description>How images dropped or pasted into the editor are turned into a URL. Data URL embeds the image in the template and needs no back end, but many email clients will not render it. Microflow hands the upload to your app and is the option to use in production.</description>
                 <enumerationValues>
@@ -184,6 +184,10 @@
             <property key="onImageUpload" type="action" required="false">
                 <caption>Upload action</caption>
                 <description>Runs after the image data has been written to the attributes. Store the file and put its URL in the resulting URL attribute.</description>
+            </property>
+            <property key="imageUploadOpensPage" type="boolean" defaultValue="false">
+                <caption>Upload action opens a page</caption>
+                <description>Yes when the upload action shows a page (for alt text, cropping or picking from a library) and the URL is set from there. The widget then waits until the timeout. No: the widget reports an error as soon as the action finishes without setting the URL.</description>
             </property>
             <property key="imageUploadTimeout" type="integer" defaultValue="30">
                 <caption>Upload timeout (s)</caption>

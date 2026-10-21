@@ -384,6 +384,69 @@ describe("EmailTemplateEditor", () => {
         }
     });
 
+    it("saves after Keep my changes in automatic mode", async () => {
+        jest.useFakeTimers();
+        try {
+            const props = makeProps({ saveMode: "auto", autoSaveDelay: 500 });
+            const { rerender } = render(<EmailTemplateEditor {...props} />);
+            await act(async () => {});
+            edit();
+            const other = {
+                type: "doc",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Theirs" }] }]
+            };
+            const theirs = attribute(JSON.stringify(other));
+            rerender(<EmailTemplateEditor {...props} documentAttribute={theirs} />);
+            await act(async () => {});
+
+            fireEvent.click(screen.getByRole("button", { name: "Keep my changes" }));
+            await act(async () => {
+                await jest.advanceTimersByTimeAsync(600);
+            });
+            expect(JSON.parse(theirs.value)).toEqual(EDITED);
+            expect(props.onSaveAction.execute).toHaveBeenCalledTimes(1);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it("does not write an automatic save that was rendering when the template changed elsewhere", async () => {
+        jest.useFakeTimers();
+        try {
+            let finishRender;
+            mockRef.getEmail = jest.fn(
+                () =>
+                    new Promise(resolve => {
+                        finishRender = () => resolve({ html: "<p>Hello</p>", text: "Hello" });
+                    })
+            );
+            const props = makeProps({ saveMode: "auto", autoSaveDelay: 500 });
+            const { rerender } = render(<EmailTemplateEditor {...props} />);
+            await act(async () => {});
+            edit();
+            await act(async () => {
+                await jest.advanceTimersByTimeAsync(600);
+            });
+            // The automatic save is rendering; now someone else saves.
+            const other = {
+                type: "doc",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Theirs" }] }]
+            };
+            const theirs = attribute(JSON.stringify(other));
+            rerender(<EmailTemplateEditor {...props} documentAttribute={theirs} />);
+            await act(async () => {
+                finishRender();
+                await Promise.resolve();
+            });
+
+            expect(theirs.setValue).not.toHaveBeenCalled();
+            expect(props.onSaveAction.execute).not.toHaveBeenCalled();
+            expect(screen.getByText(/changed elsewhere/)).toBeInTheDocument();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     it("asks before a reload throws away unsaved work", async () => {
         render(<EmailTemplateEditor {...makeProps()} />);
         await screen.findByTestId("surface");

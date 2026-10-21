@@ -146,6 +146,7 @@ export function EmailTemplateEditor(props) {
         imageUrlAttribute: props.imageUrlAttribute,
         onImageUpload: props.onImageUpload,
         timeoutSeconds: props.imageUploadTimeout,
+        waitForUrl: props.imageUploadOpensPage,
         maxSizeKb: props.imageMaxSize,
         onError: setError
     });
@@ -153,7 +154,7 @@ export function EmailTemplateEditor(props) {
     // ----------------------------------------------------------------- saving
 
     const persist = useCallback(
-        async ({ runSaveAction }) => {
+        async ({ runSaveAction, automatic = false }) => {
             const ref = emailRef;
             if (!ref?.editor || !editable) {
                 return false;
@@ -170,6 +171,11 @@ export function EmailTemplateEditor(props) {
                 const { text } = email;
                 if (sequence !== saveSequenceRef.current) {
                     // A newer save started while react-email was rendering.
+                    return false;
+                }
+                if (automatic && externalChangeRef.current) {
+                    // The template changed elsewhere while this save rendered:
+                    // leave the choice to the user rather than overwrite it.
                     return false;
                 }
 
@@ -209,7 +215,8 @@ export function EmailTemplateEditor(props) {
             subjectAttribute,
             subjectRef,
             onSaveAction,
-            dark
+            dark,
+            externalChangeRef
         ]
     );
 
@@ -228,7 +235,7 @@ export function EmailTemplateEditor(props) {
                 if (externalChangeRef.current) {
                     return;
                 }
-                const saved = await persist({ runSaveAction: true });
+                const saved = await persist({ runSaveAction: true, automatic: true });
                 if (!saved) {
                     return;
                 }
@@ -309,7 +316,11 @@ export function EmailTemplateEditor(props) {
     const keepMyChanges = useCallback(() => {
         loadedSignatureRef.current = source.signature;
         setExternalChange(false);
-    }, [source]);
+        if (saveMode === "auto") {
+            // The pending save was cancelled when the banner appeared.
+            scheduleIdleWork();
+        }
+    }, [source, saveMode, scheduleIdleWork]);
 
     // ------------------------------------------------------------ editor wire
 

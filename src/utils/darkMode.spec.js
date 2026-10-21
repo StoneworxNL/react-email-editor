@@ -129,6 +129,8 @@ describe("code in dark mode", () => {
             applyDarkMode(WITH_CODE, { ...DARK, code: { backgroundColor: "#1b5169", color: "#f3f4f5" } })
         ).querySelector("head style").textContent;
         expect(css).toContain(".rem-dark-code{background-color:#1b5169 !important;color:#f3f4f5 !important}");
+        // Syntax tokens are recoloured too: their light-theme colours clash with a dark block.
+        expect(css).toContain(".rem-dark-code *{color:#f3f4f5 !important}");
     });
 
     it("recognises panels whose background is written as the shorthand", () => {

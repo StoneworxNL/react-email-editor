@@ -116,6 +116,7 @@ export function getProperties(values, defaultProperties, _target) {
             "imageNameAttribute",
             "imageUrlAttribute",
             "onImageUpload",
+            "imageUploadOpensPage",
             "imageUploadTimeout"
         ]);
     }

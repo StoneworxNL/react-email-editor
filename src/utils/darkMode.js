@@ -135,6 +135,10 @@ export function darkRules(dark) {
             .map(([prop, value]) => `${CSS_NAMES[prop]}:${value} !important`)
             .join(";");
         rules.push(`.${PREFIX}${part}{${declarations}}`);
+        if (part === "code" && props.color) {
+            // Syntax tokens carry light-theme colours meant for a light block.
+            rules.push(`.${PREFIX}code *{color:${props.color} !important}`);
+        }
         // Outlook.com and the Outlook apps mark their dark mode with attributes.
         const colour = props.color ? `color:${props.color} !important` : "";
         const background = props.backgroundColor ? `background-color:${props.backgroundColor} !important` : "";

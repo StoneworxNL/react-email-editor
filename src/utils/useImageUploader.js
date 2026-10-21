@@ -13,10 +13,14 @@ function readAsDataUrl(file) {
     });
 }
 
-/** Refuse files that are not images, or larger than the configured limit. */
+// Raster formats only. SVG can carry script: stored and served from the app's
+// own domain it would be stored XSS, and Gmail and Outlook do not show it anyway.
+export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+/** Refuse files that are not PNG, JPEG, GIF or WebP, or larger than the configured limit. */
 export function checkImageFile(file, maxSizeKb) {
-    if (!file || typeof file.type !== "string" || !file.type.startsWith("image/")) {
-        throw new Error("Only image files can be added to the email.");
+    if (!file || !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        throw new Error("Only PNG, JPEG, GIF and WebP images can be added to the email.");
     }
     const limit = Number(maxSizeKb);
     if (limit > 0 && file.size > limit * 1024) {
@@ -106,7 +110,10 @@ async function uploadViaMicroflow(file, config) {
                 return;
             }
             const running = Boolean(config.getLatest().onImageUpload?.isExecuting);
-            if (running) {
+            if (config.waitForUrl) {
+                // The action opens a page (alt text, crop, a library) and the URL
+                // is set from there, after the action itself has finished.
+            } else if (running) {
                 sawRunning = true;
                 idlePolls = 0;
             } else if (++idlePolls > (sawRunning ? 2 : 5)) {

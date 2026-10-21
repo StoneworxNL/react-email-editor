@@ -77,6 +77,7 @@ describe("getProperties", () => {
                     "variablePrefix",
                     "sendTestCaption",
                     "imageDataAttribute",
+                    "imageUploadOpensPage",
                     "imageUploadTimeout"
                 ].map(key => ({ key }))
             }
@@ -102,6 +103,7 @@ describe("getProperties", () => {
             "variablePrefix",
             "sendTestCaption",
             "imageDataAttribute",
+            "imageUploadOpensPage",
             "imageUploadTimeout"
         ]);
     });
