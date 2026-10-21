@@ -231,81 +231,10 @@ Two smaller traps, both handled in the config:
 
 ## Future work
 
-From a feature-gap analysis for the Marketplace release. There is no
-drag-and-drop email builder on the Marketplace; the Email Connector edits
-templates with the generic Rich Text widget. So the widget is worth publishing
-as it is, and the items below are about becoming the default choice, not about
-more formatting options.
-
-### Before or with the Marketplace release
-
-- **Docs:** compare the widget with the Email Connector's Rich Text template
-  screen, and ship a sample microflow that writes the output into
-  `Email_Connector.EmailTemplate` (`Content`, `PlainBody`, `Subject`).
-- **Version support:** state clearly that this build is Mendix 11.12 / React 19
-  only, or add a Mendix 10.24 LTS build: the Email Connector targets 10.24.11 and
-  many of its users are still on 10 LTS.
-- **Third-party notices:** keep `dependencies.txt` (MIT notices for
-  `@react-email/editor` and Tiptap) in the `.mpk`. The current build includes it.
-- **Repository:** make it public, so the Studio Pro problem links resolve.
-
-### 1.1: quick wins
-
-- **Preheader** (inbox preview text) attribute, written as React Email's hidden
-  `Preview` block.
-- **Merge-tag fallbacks** such as `{%FirstName | there%}`, and a warning for
-  tokens that are not in the variables datasource. The Email Connector cannot
-  evaluate fallbacks, so either validate only or resolve them in a helper
-  microflow.
-- **Table block** for order summaries and key-value details.
-- **Pre-send checks:** missing alt text, empty links, buttons without a URL,
-  unresolved tokens, and an HTML size warning (Gmail clips messages over 102 KB;
-  base64 images add a third to their size).
-- **Link options:** a UTM appender, and `{%token%}` in link URLs.
-- **Starter templates** (welcome, password reset, order confirmation,
-  notification) and a "Start from template" picker.
-- **Social icons and video-thumbnail blocks.**
-
-### 1.2: differentiators
-
-- **Repeat-for-each and display conditions:** a section setting such as "Repeat
-  for association X" or "Show if attribute Y" that emits markers, and a Java
-  action or microflow that expands them before `CreateEmailFromTemplate`. Email
-  Connector tokens only go one level deep and cannot loop. Until then,
-  document the HTML-valued token pattern: a microflow builds the rows and one
-  token injects them.
-- **Images as System.Image / FileDocument:** an "Inline (CID attachment)" mode
-  using the Email Connector's `cid:mxcid:` inline attachments, and a picker
-  over a datasource of image objects. Gmail strips `data:` images.
-- **Email Connector bridge:** a companion module or documented snippet that
-  copies HTML, text and subject into the Connector's template, carries over
-  attachments, and feeds Model Reflection tokens (including one-level
-  associations) into the variables datasource.
-
-### 2.0
-
-- **Reusable or synced partials** (header, footer, signature, legal text): a
-  `Partial` entity and a block that stores only a reference; plus "Save
-  selection as block".
-- **Role-based locking** of blocks and sections, with a "Can edit locked
-  content" expression.
-- **Multilingual templates:** a `TemplateTranslation` entity and a language
-  switcher in the toolbar.
-
-### Longer term
-
-- **Version history** as a `TemplateVersion` entity written by On save, with a
-  Versions drawer. Tiptap's own version history needs its paid cloud server.
-- **Review and approval** through a Mendix workflow (Draft, In review,
-  Published) rather than in-editor comments.
-- **Brand kit:** lock palette, fonts and button styles to the app's brand.
-- **Custom web fonts** with email-safe fallbacks.
-- **AI assist** (rewrite, shorten, translate, subject suggestions) as a
-  bubble-menu button that calls a Mendix action.
-- **ZIP export** (HTML and images). MJML export and rendering previews
-  (Litmus, Email on Acid) are low value for internal Mendix apps.
-- **Not planned:** AMP for email, and real-time co-editing. The concurrent-edit
-  banner covers the Mendix case.
+Planned work is tracked as [GitHub issues](https://github.com/StoneworxNL/react-email-editor/issues),
+grouped into [milestones](https://github.com/StoneworxNL/react-email-editor/milestones):
+Marketplace release, 1.1, 1.2, 2.0 and Later. AMP for email and real-time
+co-editing are not planned; the concurrent-edit banner covers the Mendix case.
 
 ## Development
 
