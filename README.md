@@ -99,7 +99,9 @@ sends the email with the Email Connector. **Send test caption** sets its label.
   finishes without setting the URL, so the action must set it before it ends.
   If the action opens a page (for alt text, cropping or picking from a library)
   and the URL is set from there, turn on **Upload action opens a page**: the
-  widget then waits until the timeout.
+  widget then waits until the timeout. Give the user time to fill in the page:
+  Studio Pro warns below 120 seconds, and the next image waits until the
+  timeout runs out if the user closes the page without uploading.
 
 **Maximum image size** (2048 KB by default, 0 for no limit) refuses larger
 files. Only PNG, JPEG, GIF and WebP are accepted, for data URLs and microflow

@@ -15,7 +15,8 @@ All notable changes to the Email Template Editor widget.
 - Readable names in the style panel's path, and an outline on the selected block.
 - Maximum image size property; PNG, JPEG, GIF and WebP only (no SVG); https-only
   URLs in Ask for a URL; Ask for a URL is the default image mode.
-- Upload action opens a page option, for uploads that finish from a page.
+- Upload action opens a page option, for uploads that finish from a page, with
+  a Studio Pro warning for a timeout under 120 seconds.
 - Studio Pro toolbox icon and tile, light and dark.
 - Unit tests (`npm test`) and a CI workflow (lint, test, build).
 
@@ -27,6 +28,8 @@ All notable changes to the Email Template Editor widget.
 - Microflow image uploads take turns, never pick up the previous URL, and stop
   waiting when the action ends without one.
 - Variables are inserted at the cursor.
+- Ask for a URL says that a dropped or pasted image file can't be uploaded.
+- Dark code blocks keep one readable colour in Outlook.com too.
 - Sample values in the preview are escaped; tokens with HTML-special delimiters
   are found in the rendered HTML.
 - The editor's controls render at full size in Atlas apps (10px root font).

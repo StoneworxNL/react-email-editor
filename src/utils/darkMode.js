@@ -144,6 +144,9 @@ export function darkRules(dark) {
         const background = props.backgroundColor ? `background-color:${props.backgroundColor} !important` : "";
         if (colour) {
             rules.push(`[data-ogsc] .${PREFIX}${part}{${colour}}`);
+            if (part === "code") {
+                rules.push(`[data-ogsc] .${PREFIX}code *{${colour}}`);
+            }
         }
         if (background) {
             rules.push(`[data-ogsb] .${PREFIX}${part}{${background}}`);

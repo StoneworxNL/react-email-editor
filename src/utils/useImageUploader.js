@@ -110,16 +110,20 @@ async function uploadViaMicroflow(file, config) {
                 return;
             }
             const running = Boolean(config.getLatest().onImageUpload?.isExecuting);
-            if (config.waitForUrl) {
-                // The action opens a page (alt text, crop, a library) and the URL
-                // is set from there, after the action itself has finished.
-            } else if (running) {
-                sawRunning = true;
-                idlePolls = 0;
-            } else if (++idlePolls > (sawRunning ? 2 : 5)) {
-                clearInterval(timer);
-                reject(new Error("The upload action finished without returning an image URL. Check it for errors."));
-                return;
+            // With waitForUrl the action opens a page (alt text, crop, a library)
+            // and the URL is set from there, after the action itself has finished,
+            // so only the timeout ends the wait.
+            if (!config.waitForUrl) {
+                if (running) {
+                    sawRunning = true;
+                    idlePolls = 0;
+                } else if (++idlePolls > (sawRunning ? 2 : 5)) {
+                    clearInterval(timer);
+                    reject(
+                        new Error("The upload action finished without returning an image URL. Check it for errors.")
+                    );
+                    return;
+                }
             }
             if (Date.now() > deadline) {
                 clearInterval(timer);
@@ -162,8 +166,13 @@ export function useImageUploader(config) {
                 if (mode === "promptUrl") {
                     // A browser prompt is the whole point of this mode: it is the
                     // no-back-end option for images that are already hosted.
+                    // A dropped or pasted file cannot be stored in this mode; say so
+                    // rather than dropping it silently.
+                    const message = file
+                        ? "Image files can't be uploaded here. Enter the https:// URL of a hosted image."
+                        : "Enter the https:// URL of a hosted image.";
                     // eslint-disable-next-line no-alert
-                    const url = window.prompt("Image URL", "https://");
+                    const url = window.prompt(message, "https://");
                     return { url: checkImageUrl(url) };
                 }
 

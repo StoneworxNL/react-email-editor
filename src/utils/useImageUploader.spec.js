@@ -30,6 +30,11 @@ describe("useImageUploader", () => {
         jest.spyOn(window, "prompt").mockReturnValue("  https://cdn.example.com/a.png ");
         const { result } = setup({ mode: "promptUrl" });
         await expect(result.current(file)).resolves.toEqual({ url: "https://cdn.example.com/a.png" });
+        // The dropped file is not kept, and the prompt says so.
+        expect(window.prompt).toHaveBeenCalledWith(
+            "Image files can't be uploaded here. Enter the https:// URL of a hosted image.",
+            "https://"
+        );
     });
 
     it.each([

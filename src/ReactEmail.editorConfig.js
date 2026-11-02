@@ -128,6 +128,9 @@ export function getProperties(values, defaultProperties, _target) {
  * @param {Object} values
  * @returns {Problem[]} returns a list of problems.
  */
+/** Seconds a user needs on an upload page for alt text, cropping or a library. */
+const MIN_PAGE_UPLOAD_TIMEOUT_S = 120;
+
 export function check(values) {
     /** @type {Problem[]} */
     const errors = [];
@@ -201,6 +204,14 @@ export function check(values) {
                 property: "onImageUpload",
                 severity: "error",
                 message: "Select the action that stores the uploaded image.",
+                url: DOCS_URL
+            });
+        }
+        if (values.imageUploadOpensPage && (values.imageUploadTimeout ?? 0) < MIN_PAGE_UPLOAD_TIMEOUT_S) {
+            errors.push({
+                property: "imageUploadTimeout",
+                severity: "warning",
+                message: `The upload action opens a page, so give the user time to fill it in: set the timeout to at least ${MIN_PAGE_UPLOAD_TIMEOUT_S} seconds. Until it runs out, the next image waits.`,
                 url: DOCS_URL
             });
         }

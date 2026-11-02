@@ -45,6 +45,19 @@ describe("check", () => {
         ]);
     });
 
+    it("warns when an upload page has too little time", () => {
+        const upload = {
+            imageMode: "microflow",
+            imageDataAttribute: "Data",
+            imageUrlAttribute: "Url",
+            onImageUpload: {},
+            imageUploadOpensPage: true
+        };
+        expect(problemsFor({ ...upload, imageUploadTimeout: 30 })).toEqual(["warning:imageUploadTimeout"]);
+        expect(problemsFor({ ...upload, imageUploadTimeout: 120 })).toEqual([]);
+        expect(problemsFor({ ...upload, imageUploadOpensPage: false, imageUploadTimeout: 30 })).toEqual([]);
+    });
+
     it("warns that data URL images do not survive most mail clients", () => {
         expect(problemsFor({ imageMode: "dataUrl" })).toEqual(["warning:imageMode"]);
     });
