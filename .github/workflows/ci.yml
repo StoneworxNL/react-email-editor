@@ -20,6 +20,12 @@ jobs:
             - run: npm test
             # Lints again and builds the .mpk.
             - run: npm run release
+            - name: Check the .mpk ships LICENSE and dependencies.txt
+              run: |
+                  mpk=$(ls dist/*/*.mpk)
+                  for f in LICENSE dependencies.txt; do
+                      unzip -l "$mpk" | grep -qE " $f\$" || { echo "::error::$f is missing from $mpk"; exit 1; }
+                  done
             - uses: actions/upload-artifact@v5
               with:
                   name: widget-mpk

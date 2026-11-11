@@ -1,0 +1,42 @@
+name: Compliance
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+
+jobs:
+    secrets:
+        name: Secrets (gitleaks)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+            - name: Scan the full history for secrets
+              env:
+                  GITLEAKS_VERSION: 8.30.1
+              run: |
+                  curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz gitleaks
+                  ./gitleaks git . --no-banner --redact --verbose
+
+    licenses:
+        name: Licenses of bundled dependencies
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v5
+              with:
+                  # pluggable-widgets-tools 11.12 requires >=22.18.0 <23.
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            # Dual licenses pass when one option is allowed (e.g. "MIT OR CC0-1.0").
+            - name: Check licenses
+              run: >
+                  npx --yes license-checker-rseidelsohn@4 --production --excludePrivatePackages
+                  --excludePackagesStartingWith "@mendix/;reactemail@" --onlyAllow
+                  "MIT;MIT-0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;Apache-2.0;Python-2.0;CC0-1.0;BlueOak-1.0.0"

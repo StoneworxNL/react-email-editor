@@ -1,5 +1,7 @@
 import commonjs from "@rollup/plugin-commonjs";
+import { copyFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join } from "node:path";
 
 const require = createRequire(import.meta.url);
 
@@ -323,6 +325,27 @@ export default { version, renderToString, renderToStaticMarkup, renderToReadable
     };
 }
 
+// The widget tools copy LICENSE into the .mpk with a glob built from an absolute
+// path. On Windows that path has backslashes, fast-glob matches nothing, and the
+// copy is skipped without a word, so a release built on Windows ships without
+// LICENSE (Linux builds, including CI, are fine). Copy it ourselves. The plugin
+// sits ahead of the Mendix plugins, so its writeBundle runs, synchronously,
+// before theirs zips the folder into the .mpk.
+const WIDGET_OUT_DIR = join(process.cwd(), "dist", "tmp", "widgets");
+
+function copyLicenseIntoWidget() {
+    return {
+        name: "copy-license-into-widget",
+
+        writeBundle() {
+            const license = join(process.cwd(), "LICENSE");
+            if (existsSync(license) && existsSync(WIDGET_OUT_DIR)) {
+                copyFileSync(license, join(WIDGET_OUT_DIR, "LICENSE"));
+            }
+        }
+    };
+}
+
 export default args =>
     args.configDefaultConfig.map(config => {
         config.output.inlineDynamicImports = true;
@@ -333,6 +356,7 @@ export default args =>
         // it still runs last regardless of where the plugin sits.
         const externals = Array.isArray(config.external) ? config.external : [];
         config.plugins = [
+            copyLicenseIntoWidget(),
             reactDomServerForEitherReactBuild(),
             reactEmailRemToPx(),
             dropJsxImportSourcePragma(),
