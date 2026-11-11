@@ -30,10 +30,10 @@
         "@rollup/plugin-commonjs": "29.0.3"
     },
     "dependencies": {
-        "@react-email/editor": "1.7.7",
+        "@react-email/editor": "1.8.4",
         "classnames": "^2.5.1",
-        "@tiptap/pm": "3.32.0",
-        "@tiptap/react": "3.32.0"
+        "@tiptap/pm": "3.33.1",
+        "@tiptap/react": "3.33.1"
     },
     "comment_react_version": [
         "Both the toolchain major and React must match the target Studio Pro.",
