@@ -3,8 +3,6 @@
  * The editor surface itself uses the icons that ship with @react-email/editor.
  */
 
-import { createElement } from "react";
-
 function Icon({ children, size = 16, ...rest }) {
     return (
         <svg
@@ -105,5 +103,25 @@ export const CheckIcon = props => (
 export const ChevronDownIcon = props => (
     <Icon {...props}>
         <path d="m6 9 6 6 6-6" />
+    </Icon>
+);
+
+export const SendIcon = props => (
+    <Icon {...props}>
+        <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+        <path d="m21.854 2.147-10.94 10.939" />
+    </Icon>
+);
+
+export const SunIcon = props => (
+    <Icon {...props}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </Icon>
+);
+
+export const MoonIcon = props => (
+    <Icon {...props}>
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
     </Icon>
 );

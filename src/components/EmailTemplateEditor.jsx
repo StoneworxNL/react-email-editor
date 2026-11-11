@@ -1,15 +1,23 @@
 import { AlertIcon, CheckIcon } from "./Icons";
 import { allSettled, executeAction, isAvailable, isWritable, readString, writeString } from "../utils/mendix";
-import { buildToken, readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
-import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { applyDarkMode, darkPreviewHtml } from "../utils/darkMode";
+import { readVariables, resolveSource, serializeDocument, substituteVariables } from "../utils/template";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodePane } from "./CodePane";
 import { EmailEditor } from "@react-email/editor";
 import { Inspector } from "@react-email/editor/ui";
+import { NodeBreadcrumb } from "./NodeBreadcrumb";
 import { PreviewPane } from "./PreviewPane";
+import { SelectionHighlight } from "./SelectionHighlight";
 import { Toolbar } from "./Toolbar";
+import { applyMobileLayout } from "../utils/mobileLayout";
 import classNames from "classnames";
 import { resolveTheme } from "../utils/theme";
 import { useImageUploader } from "../utils/useImageUploader";
+import { useLatest } from "../utils/useLatest";
+
+/** Matches the narrow-layout container query in ReactEmail.css. */
+const NARROW_VIEWPORT = 720;
 
 function errorMessage(error) {
     return error instanceof Error ? error.message : String(error);
@@ -38,13 +46,16 @@ export function EmailTemplateEditor(props) {
         themeConfig,
         variablesDatasource,
         variableName,
+        variableToken,
         variableLabel,
         variableSample,
         variablePrefix,
         variableSuffix,
         imageMode,
         onSaveAction,
-        onChangeAction
+        onChangeAction,
+        onSendTestAction,
+        sendTestCaption
     } = props;
 
     const [loaded, setLoaded] = useState(null);
@@ -57,7 +68,12 @@ export function EmailTemplateEditor(props) {
     const [externalChange, setExternalChange] = useState(false);
     const [view, setView] = useState("design");
     const [previewWidth, setPreviewWidth] = useState("desktop");
-    const [inspectorOpen, setInspectorOpen] = useState(true);
+    const [previewScheme, setPreviewScheme] = useState("light");
+    // On a phone the style panel would take most of the editor, so it starts closed there.
+    // A width of 0 means the page is not laid out yet (a hidden frame): assume a wide screen.
+    const [inspectorOpen, setInspectorOpen] = useState(
+        () => !(window.innerWidth > 0 && window.innerWidth <= NARROW_VIEWPORT)
+    );
     const [composed, setComposed] = useState(null);
     const [copied, setCopied] = useState(false);
     const [canUndo, setCanUndo] = useState(false);
@@ -71,6 +87,7 @@ export function EmailTemplateEditor(props) {
     const loadedSignatureRef = useRef(null);
     const saveSequenceRef = useRef(0);
     const idleTimerRef = useRef(null);
+    const selectionRef = useRef(null);
 
     // ---------------------------------------------------------------- sources
 
@@ -91,21 +108,35 @@ export function EmailTemplateEditor(props) {
     const subjectDirty = subjectDraft !== null && subjectDraft !== subjectRaw;
     const dirty = docDirty || subjectDirty;
 
-    const dirtyRef = useRef(false);
-    dirtyRef.current = dirty;
-    const subjectRef = useRef(subject);
-    subjectRef.current = subject;
+    const dirtyRef = useLatest(dirty);
+    const externalChangeRef = useLatest(externalChange);
+    const subjectRef = useLatest(subject);
 
     // ------------------------------------------------------------- appearance
 
-    const { theme, error: themeError } = useMemo(
-        () => resolveTheme(themePreset, themeConfig),
-        [themePreset, themeConfig]
-    );
+    const {
+        theme,
+        dark,
+        error: themeError
+    } = useMemo(() => resolveTheme(themePreset, themeConfig), [themePreset, themeConfig]);
 
     const variables = useMemo(
-        () => readVariables(variablesDatasource, variableName, variableLabel, variableSample),
-        [variablesDatasource, variableName, variableLabel, variableSample]
+        () =>
+            readVariables(
+                variablesDatasource,
+                { name: variableName, token: variableToken, label: variableLabel, sample: variableSample },
+                variablePrefix,
+                variableSuffix
+            ),
+        [
+            variablesDatasource,
+            variableName,
+            variableToken,
+            variableLabel,
+            variableSample,
+            variablePrefix,
+            variableSuffix
+        ]
     );
 
     const uploadImage = useImageUploader({
@@ -115,13 +146,15 @@ export function EmailTemplateEditor(props) {
         imageUrlAttribute: props.imageUrlAttribute,
         onImageUpload: props.onImageUpload,
         timeoutSeconds: props.imageUploadTimeout,
+        waitForUrl: props.imageUploadOpensPage,
+        maxSizeKb: props.imageMaxSize,
         onError: setError
     });
 
     // ----------------------------------------------------------------- saving
 
     const persist = useCallback(
-        async ({ runSaveAction }) => {
+        async ({ runSaveAction, automatic = false }) => {
             const ref = emailRef;
             if (!ref?.editor || !editable) {
                 return false;
@@ -131,9 +164,18 @@ export function EmailTemplateEditor(props) {
             setError(null);
             try {
                 const documentJson = serializeDocument(ref.getJSON());
-                const { html, text } = await ref.getEmail();
+                const email = await ref.getEmail();
+                // What is stored and sent: React Email's HTML, with columns that
+                // stack on phones and the dark colours.
+                const html = applyDarkMode(applyMobileLayout(email.html), dark);
+                const { text } = email;
                 if (sequence !== saveSequenceRef.current) {
                     // A newer save started while react-email was rendering.
+                    return false;
+                }
+                if (automatic && externalChangeRef.current) {
+                    // The template changed elsewhere while this save rendered:
+                    // leave the choice to the user rather than overwrite it.
                     return false;
                 }
 
@@ -144,7 +186,9 @@ export function EmailTemplateEditor(props) {
 
                 baselineRef.current = documentJson;
                 lastHtmlRef.current = html;
-                setDocDirty(false);
+                // Rendering takes a while and the user may have kept typing: only
+                // what was serialised above is saved, so anything newer stays dirty.
+                setDocDirty(serializeDocument(ref.getJSON()) !== documentJson);
                 setSubjectDraft(null);
                 setExternalChange(false);
                 setSavedAt(new Date());
@@ -162,7 +206,18 @@ export function EmailTemplateEditor(props) {
                 }
             }
         },
-        [emailRef, editable, documentAttribute, htmlAttribute, textAttribute, subjectAttribute, onSaveAction]
+        [
+            emailRef,
+            editable,
+            documentAttribute,
+            htmlAttribute,
+            textAttribute,
+            subjectAttribute,
+            subjectRef,
+            onSaveAction,
+            dark,
+            externalChangeRef
+        ]
     );
 
     const saveNow = useCallback(() => {
@@ -175,11 +230,19 @@ export function EmailTemplateEditor(props) {
         const delay = Math.max(0, autoSaveDelay ?? 800);
         idleTimerRef.current = window.setTimeout(async () => {
             if (saveMode === "auto") {
-                await persist({ runSaveAction: true });
+                // While the "changed elsewhere" banner is up, the user decides:
+                // saving now would overwrite the other version unseen.
+                if (externalChangeRef.current) {
+                    return;
+                }
+                const saved = await persist({ runSaveAction: true, automatic: true });
+                if (!saved) {
+                    return;
+                }
             }
             executeAction(onChangeAction);
         }, delay);
-    }, [autoSaveDelay, saveMode, persist, onChangeAction]);
+    }, [autoSaveDelay, saveMode, persist, onChangeAction, externalChangeRef]);
 
     useEffect(() => () => window.clearTimeout(idleTimerRef.current), []);
 
@@ -224,12 +287,14 @@ export function EmailTemplateEditor(props) {
         }
         if (loaded && dirtyRef.current) {
             // Someone else changed the template while this user was editing it.
-            // Never silently discard their work: let them choose.
+            // Never silently discard their work: let them choose. A pending
+            // automatic save would make that choice for them, so cancel it.
+            window.clearTimeout(idleTimerRef.current);
             setExternalChange(true);
             return;
         }
         applySource(source);
-    }, [ready, source, loaded, isEcho, applySource]);
+    }, [ready, source, loaded, isEcho, applySource, dirtyRef]);
 
     const reload = useCallback(() => {
         if (dirtyRef.current) {
@@ -240,7 +305,7 @@ export function EmailTemplateEditor(props) {
         }
         window.clearTimeout(idleTimerRef.current);
         applySource(source);
-    }, [applySource, source]);
+    }, [applySource, source, dirtyRef]);
 
     const confirmReloadNow = useCallback(() => {
         window.clearTimeout(idleTimerRef.current);
@@ -251,11 +316,16 @@ export function EmailTemplateEditor(props) {
     const keepMyChanges = useCallback(() => {
         loadedSignatureRef.current = source.signature;
         setExternalChange(false);
-    }, [source]);
+        if (saveMode === "auto") {
+            // The pending save was cancelled when the banner appeared.
+            scheduleIdleWork();
+        }
+    }, [source, saveMode, scheduleIdleWork]);
 
     // ------------------------------------------------------------ editor wire
 
     const handleReady = useCallback(ref => {
+        selectionRef.current = null;
         setEmailRef(ref);
         baselineRef.current = serializeDocument(ref.getJSON());
         setDocDirty(false);
@@ -278,6 +348,12 @@ export function EmailTemplateEditor(props) {
         const sync = () => {
             setCanUndo(editor.can().undo());
             setCanRedo(editor.can().redo());
+            // Remember where the cursor was while the user was typing, so a
+            // toolbar insert lands there even if the editor lost its selection.
+            if (editor.isFocused) {
+                const { from, to } = editor.state.selection;
+                selectionRef.current = { from, to };
+            }
         };
         sync();
         editor.on("transaction", sync);
@@ -324,10 +400,23 @@ export function EmailTemplateEditor(props) {
         };
     }, [view, composed, emailRef]);
 
-    const previewHtml = useMemo(
-        () => substituteVariables(composed?.html ?? "", variables, variablePrefix, variableSuffix),
-        [composed, variables, variablePrefix, variableSuffix]
-    );
+    // The HTML as it will be stored and sent, dark colours included.
+    const composedHtml = useMemo(() => applyDarkMode(applyMobileLayout(composed?.html ?? ""), dark), [composed, dark]);
+
+    const previewHtml = useMemo(() => {
+        const filled = applyMobileLayout(substituteVariables(composed?.html ?? "", variables));
+        // The light view leaves the dark rules out: the frame follows the viewer's
+        // own system setting, so with them a dark-mode computer would show the
+        // dark version under the light switch.
+        return previewScheme === "dark" ? darkPreviewHtml(filled, dark) : filled;
+    }, [composed, variables, previewScheme, dark]);
+
+    const previewNote =
+        previewScheme === "dark"
+            ? dark
+                ? "Dark mode as Apple Mail and Outlook for Mac show it, using the theme's dark colours."
+                : "Simulated: how apps that recolour emails themselves, such as Gmail, may show it. Add dark colours to the theme to design the dark version."
+            : null;
 
     // -------------------------------------------------------------- shortcuts
 
@@ -367,13 +456,35 @@ export function EmailTemplateEditor(props) {
             if (!editor) {
                 return;
             }
-            editor.chain().focus().insertContent(buildToken(variablePrefix, variable.name, variableSuffix)).run();
+            const size = editor.state.doc.content.size;
+            const remembered = selectionRef.current;
+            const chain = editor.chain().focus();
+            if (remembered && remembered.to <= size) {
+                chain.insertContentAt(remembered, variable.token);
+            } else {
+                chain.insertContent(variable.token);
+            }
+            chain.run();
         },
-        [emailRef, variablePrefix, variableSuffix]
+        [emailRef]
     );
 
+    const canSendTest = Boolean(onSendTestAction);
+    const sendTest = useCallback(async () => {
+        window.clearTimeout(idleTimerRef.current);
+        // Write the current template first, so the action sends what is on
+        // screen, but leave On save to an explicit save.
+        if (editable) {
+            const written = await persist({ runSaveAction: false });
+            if (!written) {
+                return;
+            }
+        }
+        executeAction(onSendTestAction);
+    }, [editable, persist, onSendTestAction]);
+
     const copyCurrentView = useCallback(() => {
-        const value = view === "text" ? composed?.text : composed?.html;
+        const value = view === "text" ? composed?.text : composedHtml;
         if (!value) {
             return;
         }
@@ -388,7 +499,7 @@ export function EmailTemplateEditor(props) {
                 window.setTimeout(() => setCopied(false), 1500);
             })
             .catch(caught => setError(`Copying failed: ${errorMessage(caught)}`));
-    }, [view, composed]);
+    }, [view, composed, composedHtml]);
 
     const changeSubject = useCallback(
         event => {
@@ -420,19 +531,22 @@ export function EmailTemplateEditor(props) {
                     onCopy={copyCurrentView}
                     onInsertVariable={insertVariable}
                     onPreviewWidthChange={setPreviewWidth}
+                    onPreviewSchemeChange={setPreviewScheme}
+                    previewScheme={previewScheme}
                     onRedo={() => emailRef?.editor?.chain().focus().redo().run()}
                     onReload={reload}
                     onSave={saveNow}
+                    onSendTest={canSendTest ? sendTest : undefined}
                     onToggleInspector={() => setInspectorOpen(open => !open)}
                     onUndo={() => emailRef?.editor?.chain().focus().undo().run()}
                     onViewChange={setView}
                     previewWidth={previewWidth}
                     saveMode={saveMode}
                     saving={saving}
+                    sendTestCaption={sendTestCaption?.value || "Send test"}
+                    sendTestDisabled={saving || !onSendTestAction?.canExecute || onSendTestAction?.isExecuting}
                     showInspector={showInspector}
                     showViewSwitcher={showViewSwitcher}
-                    variablePrefix={variablePrefix}
-                    variableSuffix={variableSuffix}
                     variables={variables}
                     view={view}
                 />
@@ -505,9 +619,10 @@ export function EmailTemplateEditor(props) {
                                 placeholder={placeholderText?.value || undefined}
                                 theme={theme}
                             >
+                                <SelectionHighlight />
                                 {showInspector && inspectorOpen ? (
                                     <Inspector.Root className="mxre-inspector">
-                                        <Inspector.Breadcrumb />
+                                        <NodeBreadcrumb />
                                         <Inspector.Document />
                                         <Inspector.Node />
                                         <Inspector.Text />
@@ -523,11 +638,11 @@ export function EmailTemplateEditor(props) {
                 </div>
 
                 <div className="mxre-view" hidden={view !== "preview"}>
-                    <PreviewPane html={previewHtml} loading={composing} width={previewWidth} />
+                    <PreviewPane html={previewHtml} loading={composing} note={previewNote} width={previewWidth} />
                 </div>
 
                 <div className="mxre-view" hidden={view !== "html"}>
-                    <CodePane emptyLabel="Nothing to show yet." loading={composing} value={composed?.html} />
+                    <CodePane emptyLabel="Nothing to show yet." loading={composing} value={composedHtml || undefined} />
                 </div>
 
                 <div className="mxre-view" hidden={view !== "text"}>

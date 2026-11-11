@@ -1,5 +1,4 @@
 import classNames from "classnames";
-import { createElement } from "react";
 
 const MOBILE_WIDTH = 390;
 
@@ -8,7 +7,7 @@ const MOBILE_WIDTH = 390;
  * cannot leak into the Mendix page and the page's styles cannot flatter the
  * email into looking better than it is.
  */
-export function PreviewPane({ html, width, loading }) {
+export function PreviewPane({ html, width, loading, note }) {
     if (loading) {
         return <div className="mxre-placeholder">Rendering preview…</div>;
     }
@@ -17,6 +16,7 @@ export function PreviewPane({ html, width, loading }) {
     }
     return (
         <div className="mxre-preview">
+            {note ? <p className="mxre-preview-note">{note}</p> : null}
             <iframe
                 className={classNames("mxre-preview-frame", {
                     "mxre-preview-frame-mobile": width === "mobile"

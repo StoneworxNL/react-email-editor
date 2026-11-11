@@ -1,7 +1,18 @@
-import { CopyIcon, DesktopIcon, MobileIcon, PanelIcon, RedoIcon, RefreshIcon, SaveIcon, UndoIcon } from "./Icons";
+import {
+    CopyIcon,
+    DesktopIcon,
+    MobileIcon,
+    MoonIcon,
+    PanelIcon,
+    RedoIcon,
+    RefreshIcon,
+    SaveIcon,
+    SendIcon,
+    SunIcon,
+    UndoIcon
+} from "./Icons";
 import { VariableMenu } from "./VariableMenu";
 import classNames from "classnames";
-import { createElement } from "react";
 
 const VIEWS = [
     { key: "design", label: "Design" },
@@ -33,14 +44,17 @@ export function Toolbar({
     onSave,
     onReload,
     variables,
-    variablePrefix,
-    variableSuffix,
     onInsertVariable,
+    onSendTest,
+    sendTestCaption,
+    sendTestDisabled,
     showInspector,
     inspectorOpen,
     onToggleInspector,
     previewWidth,
     onPreviewWidthChange,
+    previewScheme,
+    onPreviewSchemeChange,
     onCopy,
     copied
 }) {
@@ -67,7 +81,7 @@ export function Toolbar({
                     className="mxre-button"
                     disabled={saving}
                     onClick={onReload}
-                    title="Reload the template from the database, discarding unsaved changes"
+                    title="Reload the template from the page's data, discarding unsaved changes"
                     type="button"
                 >
                     <RefreshIcon />
@@ -95,13 +109,7 @@ export function Toolbar({
                     >
                         <RedoIcon />
                     </button>
-                    <VariableMenu
-                        disabled={!editable}
-                        onInsert={onInsertVariable}
-                        prefix={variablePrefix}
-                        suffix={variableSuffix}
-                        variables={variables}
-                    />
+                    <VariableMenu disabled={!editable} onInsert={onInsertVariable} variables={variables} />
                 </div>
             ) : null}
 
@@ -131,6 +139,30 @@ export function Toolbar({
                             <MobileIcon />
                         </button>
                     </ToggleGroup>
+                    <ToggleGroup label="Colour scheme">
+                        <button
+                            aria-pressed={previewScheme !== "dark"}
+                            className={classNames("mxre-toggle", {
+                                "mxre-toggle-active": previewScheme !== "dark"
+                            })}
+                            onClick={() => onPreviewSchemeChange("light")}
+                            title="Light mode"
+                            type="button"
+                        >
+                            <SunIcon />
+                        </button>
+                        <button
+                            aria-pressed={previewScheme === "dark"}
+                            className={classNames("mxre-toggle", {
+                                "mxre-toggle-active": previewScheme === "dark"
+                            })}
+                            onClick={() => onPreviewSchemeChange("dark")}
+                            title="Dark mode"
+                            type="button"
+                        >
+                            <MoonIcon />
+                        </button>
+                    </ToggleGroup>
                 </div>
             ) : null}
 
@@ -144,6 +176,19 @@ export function Toolbar({
             ) : null}
 
             <div className="mxre-toolbar-spacer" />
+
+            {onSendTest ? (
+                <button
+                    className="mxre-button"
+                    disabled={sendTestDisabled}
+                    onClick={onSendTest}
+                    title="Save the current template and send it as a test email"
+                    type="button"
+                >
+                    <SendIcon />
+                    <span>{sendTestCaption}</span>
+                </button>
+            ) : null}
 
             {showViewSwitcher ? (
                 <ToggleGroup label="View">

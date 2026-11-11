@@ -98,7 +98,7 @@
             </property>
             <property key="themeConfig" type="string" required="false" multiline="true">
                 <caption>Theme configuration</caption>
-                <description>JSON such as: { "extends": "basic", "styles": { "body": { "backgroundColor": "#f6f9fc" }, "button": { "borderRadius": "6px" } } }. Themeable parts: body, container, h1, h2, h3, paragraph, link, image, button, codeBlock, inlineCode.</description>
+                <description>JSON such as: { "extends": "basic", "styles": { "body": { "backgroundColor": "#f6f9fc" }, "button": { "borderRadius": "6px" } } }. Themeable parts: body, container, h1, h2, h3, paragraph, link, image, button, codeBlock, inlineCode. Add "dark": { "body": { "backgroundColor": "#1b5169" } } for dark mode colours (parts: body, container, surface, h1, h2, h3, paragraph, link, button, divider, code; properties: backgroundColor, color, borderColor), which are written into the email for mail apps in dark mode.</description>
             </property>
         </propertyGroup>
 
@@ -109,7 +109,14 @@
             </property>
             <property key="variableName" type="attribute" dataSource="variablesDatasource" required="false">
                 <caption>Variable name</caption>
-                <description>Attribute holding the token name, without delimiters. For example firstName.</description>
+                <description>Attribute holding the token name, without delimiters. For example FirstName. Not needed when a Full token attribute is set.</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="variableToken" type="attribute" dataSource="variablesDatasource" required="false">
+                <caption>Full token</caption>
+                <description>Optional attribute holding the complete token, delimiters included, for example {%FirstName%}. It is inserted exactly as stored and the prefix and suffix below are ignored for it. For Model Reflection tokens used by the Email Connector, select Token.CombinedToken here.</description>
                 <attributeTypes>
                     <attributeType name="String"/>
                 </attributeTypes>
@@ -128,18 +135,18 @@
                     <attributeType name="String"/>
                 </attributeTypes>
             </property>
-            <property key="variablePrefix" type="string" required="false" defaultValue="{{">
+            <property key="variablePrefix" type="string" required="false" defaultValue="{%">
                 <caption>Prefix</caption>
-                <description>Characters placed before the variable name.</description>
+                <description>Characters placed before the variable name. The default {% matches the tokens of the Email Connector and Model Reflection modules.</description>
             </property>
-            <property key="variableSuffix" type="string" required="false" defaultValue="}}">
+            <property key="variableSuffix" type="string" required="false" defaultValue="%}">
                 <caption>Suffix</caption>
                 <description>Characters placed after the variable name.</description>
             </property>
         </propertyGroup>
 
         <propertyGroup caption="Images">
-            <property key="imageMode" type="enumeration" defaultValue="dataUrl">
+            <property key="imageMode" type="enumeration" defaultValue="promptUrl">
                 <caption>Image handling</caption>
                 <description>How images dropped or pasted into the editor are turned into a URL. Data URL embeds the image in the template and needs no back end, but many email clients will not render it. Microflow hands the upload to your app and is the option to use in production.</description>
                 <enumerationValues>
@@ -148,6 +155,10 @@
                     <enumerationValue key="microflow">Upload via microflow</enumerationValue>
                     <enumerationValue key="disabled">Do not allow images</enumerationValue>
                 </enumerationValues>
+            </property>
+            <property key="imageMaxSize" type="integer" defaultValue="2048">
+                <caption>Maximum image size (KB)</caption>
+                <description>Images larger than this are refused, and only image files are accepted. Applies to data URL and microflow uploads; 0 means no limit. Large images end up in the template and in every email sent.</description>
             </property>
             <property key="imageDataAttribute" type="attribute" required="false">
                 <caption>Upload: image data</caption>
@@ -174,9 +185,27 @@
                 <caption>Upload action</caption>
                 <description>Runs after the image data has been written to the attributes. Store the file and put its URL in the resulting URL attribute.</description>
             </property>
+            <property key="imageUploadOpensPage" type="boolean" defaultValue="false">
+                <caption>Upload action opens a page</caption>
+                <description>Yes when the upload action shows a page (for alt text, cropping or picking from a library) and the URL is set from there. The widget then waits until the timeout. No: the widget reports an error as soon as the action finishes without setting the URL.</description>
+            </property>
             <property key="imageUploadTimeout" type="integer" defaultValue="30">
                 <caption>Upload timeout (s)</caption>
                 <description>How long to wait for the upload action to fill the resulting URL attribute before giving up.</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Test email">
+            <property key="onSendTestAction" type="action" required="false">
+                <caption>Send test action</caption>
+                <description>When set, a Send test button is shown in the toolbar. It first writes the current template to the attributes, without running On save, and then runs this action. Open a popup that asks for a recipient and sends the email, for example with the Email Connector.</description>
+            </property>
+            <property key="sendTestCaption" type="textTemplate" required="false" multiline="false">
+                <caption>Send test caption</caption>
+                <description>Caption of the Send test button.</description>
+                <translations>
+                    <translation lang="en_US">Send test</translation>
+                </translations>
             </property>
         </propertyGroup>
 

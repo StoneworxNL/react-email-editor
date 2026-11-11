@@ -3,10 +3,10 @@
     "widgetName": "ReactEmail",
     "version": "1.0.0",
     "description": "Load, edit and save email templates with the React Email 6 editor, as a Mendix pluggable widget.",
-    "copyright": "© Mendix Technology BV 2026. All rights reserved.",
-    "author": "João ",
+    "copyright": "© Stoneworx 2026. All rights reserved.",
+    "author": "João Lopes",
     "engines": {
-        "node": ">=16"
+        "node": ">=22.18.0 <23"
     },
     "license": "Apache-2.0",
     "config": {
@@ -22,59 +22,43 @@
         "lint": "pluggable-widgets-tools lint",
         "lint:fix": "pluggable-widgets-tools lint:fix",
         "prerelease": "npm run lint",
-        "release": "pluggable-widgets-tools release:web"
+        "release": "pluggable-widgets-tools release:web",
+        "test": "jest --config jest.config.js"
     },
     "devDependencies": {
-        "@mendix/pluggable-widgets-tools": "10.24.0"
+        "@mendix/pluggable-widgets-tools": "11.12.1",
+        "@rollup/plugin-commonjs": "29.0.3"
     },
     "dependencies": {
         "@react-email/editor": "1.7.7",
-        "classnames": "^2.5.1"
+        "classnames": "^2.5.1",
+        "@tiptap/pm": "3.32.0",
+        "@tiptap/react": "3.32.0"
     },
     "comment_react_version": [
         "Both the toolchain major and React must match the target Studio Pro.",
-        "pluggable-widgets-tools 11.x is the Mendix 11 toolchain and expects",
-        "React 19; on React 18 it refuses to build and instead prompts to",
-        "'migrate' the dependencies, which in a non-interactive shell reads EOF",
-        "and exits 0 without building anything. 10.24.x is the Mendix 10.24",
-        "toolchain and expects React 18, which is what this app runs.",
+        "This widget targets Mendix 11.12 with the React client, which ships React 19.2.3,",
+        "so it builds with pluggable-widgets-tools 11.12.x and pins react and react-dom to 19.2.3.",
+        "For a Mendix 10.24 app use pluggable-widgets-tools 10.24.0 and React 18.2.0 instead.",
         "",
-        "react and react-dom must NOT be listed as dependencies: the toolchain",
-        "marks both 'remove' and prompts to migrate if it finds them, which in a",
-        "non-interactive shell aborts the build. Pin them through resolutions",
-        "and overrides instead -- 10.24.0 expects exactly 18.2.0 there.",
+        "react and react-dom must NOT be listed as dependencies: the toolchain treats them",
+        "as provided by the client and prompts to migrate if it finds them. Pin them",
+        "through resolutions and overrides instead.",
         "",
-        "React must match the version the Mendix client provides, exactly.",
-        "The client supplies react and react-dom to the widget at runtime, but",
-        "react-dom/server is not on that externals list, so React Email's HTML",
-        "renderer is bundled into the widget. A bundled react-dom/server reads",
-        "internals off the host's react-dom, and those internals are renamed",
-        "between majors. React 19 here on a React 18 client fails at page load",
-        "with: Cannot read properties of undefined (reading 'd') -- that is",
-        "react-dom/server@19 asking React 18 for",
-        "__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE.",
-        "Mendix 10.24 ships React 18.2.0; Mendix 11 ships React 19. The whole",
-        "React Email stack peer-accepts ^18 || ^19, so pin to whichever the",
-        "target Studio Pro uses and rebuild when the app is upgraded."
-    ],
-    "comment_rollup_version": [
-        "pluggable-widgets-tools 10.24.0 builds with rollup 3 and ships its own",
-        "copy, but every @rollup/plugin-* it depends on peer-requires rollup 4.",
-        "npm installs those peers, hoists rollup 4 to the top, and gives it the",
-        "node_modules/.bin/rollup link -- so the v3-shaped config is handed to",
-        "the v4 binary and the build dies with 'Unknown input options: acorn,",
-        "acornInjectPlugins, inlineDynamicImports, manualChunks,",
-        "maxParallelFileReads, preserveModules'. Pin rollup so the hoisted copy",
-        "and the bin link are the version the config was written for."
+        "React must match the version the Mendix client provides, exactly. The client",
+        "supplies react and react-dom at runtime, but react-dom/server is not on that",
+        "externals list, so React Email's HTML renderer is bundled into the widget and",
+        "reads internals off the host's React, which are renamed between majors.",
+        "A React 18 build on a React 19 client fails at page load with: Cannot read",
+        "properties of undefined (reading 'ReactCurrentDispatcher'). Rebuild whenever",
+        "the app's Mendix version changes its React version."
     ],
     "resolutions": {
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "rollup": "3.30.0"
+        "react": "19.2.3",
+        "react-dom": "19.2.3"
     },
     "overrides": {
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "rollup": "3.30.0"
+        "react": "19.2.3",
+        "react-dom": "19.2.3"
     }
 }

@@ -18,6 +18,16 @@
     background: var(--re-bg, #fff);
     color: var(--re-text, #1c1c1c);
     font-size: 14px;
+
+    /*
+     * Size the widget from the space it is given, never from its content. The
+     * email inside is 600px wide; without this, Mendix's flex layouts (layout
+     * grid columns, scroll containers) grow to fit it and the whole page scrolls
+     * sideways on a phone. It also makes the widget a container the narrow-layout
+     * rules at the end of this file query.
+     */
+    container: mxre / inline-size;
+    max-width: 100%;
 }
 
 .mxre-root-fill {
@@ -87,15 +97,17 @@
     justify-content: center;
 }
 
+/* Brand the primary button by setting --mxre-accent, --mxre-accent-hover and --mxre-accent-text in the app theme. */
 .mxre-button-primary {
-    border-color: #18181b;
-    background: #18181b;
-    color: #fff;
+    border-color: var(--mxre-accent, #18181b);
+    background: var(--mxre-accent, #18181b);
+    color: var(--mxre-accent-text, #fff);
 }
 
 .mxre-button-primary:hover:not(:disabled),
 .mxre-button-primary:active:not(:disabled) {
-    background: #2a2a30;
+    border-color: var(--mxre-accent-hover, #2a2a30);
+    background: var(--mxre-accent-hover, #2a2a30);
 }
 
 .mxre-toggle-group {
@@ -289,6 +301,12 @@
 }
 
 .mxre-surface {
+    /*
+     * The containing block of React Email's floating controls (bubble menus,
+     * the image pencil). Without it they are positioned against an element
+     * outside this scroll area and stay on screen when their block scrolls out.
+     */
+    position: relative;
     flex: 1 1 auto;
     min-width: 0;
     overflow: auto;
@@ -302,7 +320,9 @@
 
 .mxre-inspector {
     flex: none;
+    box-sizing: border-box;
     width: 268px;
+    padding: 12px 16px;
     overflow-y: auto;
     border-left: 1px solid var(--re-border, #e5e5e5);
     background: var(--re-bg, #fff);
@@ -323,7 +343,9 @@
 .mxre-preview {
     display: flex;
     flex: 1 1 auto;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
     min-height: 0;
     padding: 16px;
     overflow: auto;
@@ -331,8 +353,8 @@
 }
 
 .mxre-preview-frame {
+    flex: 1 1 auto;
     width: 100%;
-    height: 100%;
     min-height: 320px;
     border: 0;
     border-radius: 8px;
@@ -340,7 +362,8 @@
 }
 
 .mxre-preview-frame-mobile {
-    flex: none;
+    /* Fixed width (set inline), full height like the desktop frame. */
+    flex: 1 1 auto;
     border: 1px solid var(--re-border, #e5e5e5);
     box-shadow: var(--re-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
 }
@@ -391,4 +414,106 @@
 
 .mxre-status-muted {
     color: var(--re-text-muted, #6b6b6b);
+}
+
+/* ------------------------------------------------------------ narrow widths */
+
+/*
+ * The editor shows the email at its real width up to the template's container
+ * width (600px by default) and no wider than the space it has. That is also how
+ * the sent email behaves: React Email renders the container as
+ * max-width: 600px; width: 100%.
+ */
+.mxre-surface .tiptap .node-container {
+    max-width: 100%;
+    /* Centred, as React Email renders it in the sent email (align="center"). */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.mxre-preview-frame-mobile {
+    max-width: 100%;
+}
+
+/* Phones and narrow columns: stack the style panel under the email. */
+@container mxre (max-width: 720px) {
+    .mxre-canvas {
+        flex-direction: column;
+    }
+
+    .mxre-inspector {
+        width: auto;
+        max-height: 40%;
+        border-top: 1px solid var(--re-border, #e5e5e5);
+        border-left: 0;
+    }
+
+    .mxre-surface {
+        padding: 12px;
+    }
+
+    .mxre-preview {
+        padding: 8px;
+    }
+}
+
+/* Very narrow: icon-only toolbar buttons (each keeps its title), except Save. */
+@container mxre (max-width: 480px) {
+    .mxre-toolbar {
+        padding: 6px 8px;
+    }
+
+    .mxre-button:not(.mxre-button-primary) > span {
+        display: none;
+    }
+
+    .mxre-subject {
+        padding: 6px 8px;
+    }
+
+    .mxre-subject-label {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------ selection */
+
+/*
+ * The block being edited. An outline, not a border or background: it must not
+ * shift the layout or change how the email itself looks.
+ */
+.mxre-surface .tiptap .mxre-selected-node {
+    outline: 2px solid var(--mxre-selection, var(--mxre-accent, #2563eb));
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* The style panel's path to that block: wrap rather than truncate. */
+.mxre-breadcrumb [data-re-inspector-breadcrumb-list] {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+.mxre-breadcrumb .mxre-breadcrumb-current {
+    color: var(--mxre-selection, var(--mxre-accent, #2563eb));
+    font-weight: 600;
+}
+
+.mxre-breadcrumb-snippet {
+    margin: 4px 0 0;
+    overflow: hidden;
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Explains what the dark preview shows: designed colours or a simulation. */
+.mxre-preview-note {
+    flex: none;
+    max-width: 640px;
+    margin: 0;
+    color: var(--re-text-muted, #6b6b6b);
+    font-size: 12px;
+    text-align: center;
 }

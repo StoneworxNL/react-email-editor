@@ -14,8 +14,11 @@ A Mendix pluggable widget that loads, edits and saves email templates using the
   padding, colours).
 - **Four views** — Design, Preview (in a sandboxed iframe, desktop or mobile
   width), the rendered HTML, and the plain-text alternative.
-- **Merge variables** — an optional list of tokens such as `{{firstName}}` that
+- **Merge variables** — an optional list of tokens such as `{%FirstName%}` that
   the user can insert from the toolbar, filled in with sample values in Preview.
+  Works directly with Model Reflection tokens for the Email Connector.
+- **Send test** — an optional toolbar button that writes the template and runs
+  your action, for example a popup that sends it with the Email Connector.
 - **Manual or automatic saving**, plus <kbd>Ctrl</kbd>+<kbd>S</kbd>.
 - **Concurrent-edit handling** — if the template changes elsewhere while the
   user has unsaved work, the widget offers the choice rather than silently
@@ -60,22 +63,54 @@ easily tens of kilobytes.
 
 ### Merge variables
 
-Point **Variables** at a list of objects with a name attribute (`firstName`),
-optionally a label (`First name`) and a sample value (`Ada`). The user inserts
-them from the toolbar as literal text — `{{firstName}}` — which survives the
-round-trip through your mail server untouched. Change the delimiters with
-**Prefix** and **Suffix**. Sample values are used only to fill in the Preview;
-the saved template always keeps the tokens.
+Point **Variables** at a list of objects. Each one becomes an entry in the
+toolbar's Variable menu and is inserted at the cursor as literal text, which
+survives the round-trip through your mail server untouched.
+
+- **Full token** (optional): an attribute holding the complete token, delimiters
+  included, inserted exactly as stored. For the Email Connector, bind it to
+  Model Reflection's `Token.CombinedToken` (for example `{%FirstName%}`);
+  `CreateEmailFromTemplate` then fills the tokens in when it sends.
+- **Variable name**: used when there is no full token. The token is the name
+  wrapped in **Prefix** and **Suffix**, `{%` and `%}` by default, which matches
+  the Email Connector.
+- **Variable label** and **Sample value** (optional): the label shown in the
+  menu, and a value used to fill the token in the Preview. The saved template
+  always keeps the tokens.
+
+### Send test
+
+Set **Send test action** and a Send test button appears in the toolbar. It
+writes the current template to the attributes, without running **On save**, and
+then runs the action. Typically that opens a popup that asks for a recipient and
+sends the email with the Email Connector. **Send test caption** sets its label.
 
 ### Images
 
-- **Embed as data URL** (default) needs no back end, but many email clients
-  refuse to render data URLs. Fine for prototyping.
-- **Ask for a URL** prompts for the address of an image you already host.
+- **Ask for a URL** (default) prompts for the address of an image you already
+  host. Only absolute `https://` addresses are accepted.
+- **Embed as data URL** needs no back end, but the image is stored in every
+  template and many email clients refuse to render data URLs. Fine for
+  prototyping; Studio Pro warns when it is selected.
 - **Upload via microflow** is the production option. The widget writes the
   base64 file into an attribute, optionally the file name into another, then
   runs your action and waits for a third attribute to be filled with the public
-  URL of the stored image. It gives up after the configured timeout.
+  URL of the stored image. By default it reports an error as soon as the action
+  finishes without setting the URL, so the action must set it before it ends.
+  If the action opens a page (for alt text, cropping or picking from a library)
+  and the URL is set from there, turn on **Upload action opens a page**: the
+  widget then waits until the timeout. Give the user time to fill in the page:
+  Studio Pro warns below 120 seconds, and the next image waits until the
+  timeout runs out if the user closes the page without uploading.
+
+**Maximum image size** (2048 KB by default, 0 for no limit) refuses larger
+files. Only PNG, JPEG, GIF and WebP are accepted, for data URLs and microflow
+uploads: SVG can carry script, and Gmail and Outlook do not show it.
+
+> **Validate uploads in your microflow.** The base64 data and the file name come
+> from the user's browser and can be anything. Before storing, check the decoded
+> file's real type (not the name's extension) and size, and sanitise or replace
+> the file name.
 
 ### Theming
 
@@ -97,14 +132,50 @@ Themeable parts: `body`, `container`, `h1`, `h2`, `h3`, `paragraph`, `link`,
 `image`, `button`, `codeBlock`, `inlineCode`. Invalid JSON or an unknown part
 falls back to `basic` and says so in the widget rather than failing to render.
 
+#### Dark mode
+
+React Email renders every style inline, and its emails carry no dark colours.
+Add a `dark` object to the custom theme to give them some:
+
+```json
+{
+  "extends": "basic",
+  "styles": { "body": { "backgroundColor": "#f4f5f6" } },
+  "dark": {
+    "body": { "backgroundColor": "#1b5169", "color": "#f3f4f5" },
+    "container": { "backgroundColor": "#2e3135" },
+    "paragraph": { "color": "#e9eef0" },
+    "button": { "backgroundColor": "#0089ab", "color": "#ffffff" }
+  }
+}
+```
+
+Parts: `body`, `container`, `surface` (panels inside the container), `h1`–`h3`,
+`paragraph`, `link`, `button`, `divider`, `code` (code blocks and inline code;
+without it they keep their light colours, so syntax highlighting stays
+readable; with a `code.color`, every token takes that one colour, because the
+highlighting colours are made for a light block); properties: `backgroundColor`,
+`color`, `borderColor`. On save the widget tags the rendered elements by role
+and adds `color-scheme` meta tags and `prefers-color-scheme: dark` rules (plus
+Outlook's `[data-ogsc]`/`[data-ogsb]` variants), so Apple Mail, Outlook for Mac
+and Outlook.com show the designed dark version. Gmail and Outlook for Windows
+recolour emails themselves and ignore it.
+
+The Preview's sun/moon switch shows the dark version, or, without dark colours,
+a simulation of the apps that invert colours, so an invisible logo or a
+low-contrast button shows up before sending.
+
 The user can also change these from the style inspector, in which case the
 change is stored in the template document, not in this setting.
 
 ## Notes and limits
 
 - The widget is web-only; the editor depends on the DOM.
-- The bundle is large (~3 MB minified) because React Email renders the email in
-  the browser. Expect a noticeable first load on a cold cache.
+- The bundle is large: about 3.2 MB of minified JavaScript, a 2 MB `.mpk`.
+  React Email renders the email in the browser, and the widget carries both the
+  development and production builds of `react-dom/server` so it works on a
+  locally run app and a deployed one. Expect a noticeable first load on a cold
+  cache.
 - Code blocks fall back to highlighting as JavaScript for languages Prism does
   not bundle. React Email lazy-loads those grammars with
   ``import(`prismjs/components/prism-${language}`)``, and a dynamic import whose
@@ -120,58 +191,65 @@ change is stored in the template document, not in this setting.
 
 ## Mendix version compatibility
 
-**This widget is built for Mendix 10.24 (React 18).** That is not a detail of
-the build script; it reaches into the source. Five things have to agree with the
-Studio Pro you target, and four of them fail loudly only at app build or page
+**This widget is built for Mendix 11 (React 19.2.3).** Five things have to agree
+with the Studio Pro you target, and most of them fail only at app build or page
 load, not while building the widget:
 
-| | Mendix 10.24 | Mendix 11 |
+| | Mendix 10.24 | Mendix 11 (current) |
 | --- | --- | --- |
-| `@mendix/pluggable-widgets-tools` | `10.24.0` | `11.x` |
-| React (`overrides` / `resolutions`) | `18.2.0` | `19.x` |
-| `rollup` (`overrides`) | `3.30.0` — pinned | not needed, tools use 4 |
+| `@mendix/pluggable-widgets-tools` | `10.24.0` | `11.12.x` |
+| React (`overrides` / `resolutions`) | `18.2.0` | `19.2.3` |
+| `rollup` (`overrides`) | `3.30.0`, pinned | not needed, tools use 4 |
 | JSX runtime | classic, `pragma: createElement` | automatic |
-| `import { createElement } from "react"` in every `.jsx` | **required** | not needed |
+| `import { createElement } from "react"` in every `.jsx` | required | not needed |
 
 The React version is the one that bites hardest. The Mendix client supplies
-`react` and `react-dom` to the widget at runtime, but **not** `react-dom/server`
-— so React Email's HTML renderer is bundled into the widget, and it reads
-internals off the host's `react-dom`. Those internals are renamed between
-majors. A React 19 build on a React 18 client loads the page and dies with:
+`react` and `react-dom` to the widget at runtime, but **not**
+`react-dom/server`, so React Email's HTML renderer is bundled into the widget,
+and it reads internals off the host's React. Those internals are renamed between
+majors. A React 18 build on a React 19 client loads the page and dies with
+`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`; the
+reverse fails with `(reading 'd')`. Mendix reports either as "the page includes
+a broken widget".
 
-```
-TypeError: Cannot read properties of undefined (reading 'd')
-```
+The build *mode* has to match too. A locally run app uses **development** React,
+which calls `dispatcher.getOwner()` on the dispatcher the server renderer
+installs, and only the development renderer provides it. A production-only
+widget on a local app fails every save and preview with
+`dispatcher.getOwner is not a function`. So `rollup.config.mjs` bundles both
+builds of `react-dom/server` and picks the one that matches the host React at
+runtime.
 
-which is `react-dom/server@19` asking React 18 for
-`__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE`. Mendix reports
-it as "the page includes a broken widget". Everything in the React Email stack
-peer-accepts `^18 || ^19`, so either works — it just has to *match the client*.
-
-To move this widget to Mendix 11: bump the toolchain to `11.x`, set React to
-`19.x`, drop the `rollup` pin, and delete the `createElement` imports (Mendix 11
-compiles JSX with the automatic runtime, and the lint config there rejects the
-imports as unused).
-
-Two smaller traps, both handled in the config, both worth knowing about:
+Two smaller traps, both handled in the config:
 
 - `react` and `react-dom` must not appear in `dependencies` or
   `devDependencies`. The toolchain marks them `"remove"` and prompts to migrate
   if it finds them; in a non-interactive shell that prompt reads EOF and the
   build **exits 0 having built nothing**. Pin them through `overrides` /
   `resolutions` instead.
-- `rollup` must be pinned. Every `@rollup/plugin-*` that tools 10.24 depends on
-  peer-requires rollup 4, npm installs and hoists it, and it wins the
-  `node_modules/.bin/rollup` link — so the v3-shaped config reaches the v4
-  binary and the build dies with `Unknown input options: acorn, …`.
+- On Mendix 10.24, `rollup` must be pinned to 3: every `@rollup/plugin-*`
+  peer-requires rollup 4, which then wins the `node_modules/.bin/rollup` link
+  and rejects the v3-shaped config with `Unknown input options: acorn, …`.
+
+## Future work
+
+Planned work is tracked as [GitHub issues](https://github.com/StoneworxNL/react-email-editor/issues),
+grouped into [milestones](https://github.com/StoneworxNL/react-email-editor/milestones):
+Marketplace release, 1.1, 1.2, 2.0 and Later. AMP for email and real-time
+co-editing are not planned; the concurrent-edit banner covers the Mendix case.
 
 ## Development
 
-1. `npm install`
+1. `npm install` (Node 22.18 or newer, below 23: what pluggable-widgets-tools 11.12 requires)
 2. `npm start` rebuilds on every change into the `dist`, `deployment` and
    `widgets` folders of the Mendix project above.
 3. `npm run lint` / `npm run lint:fix`
-4. `npm run release` produces `dist/<version>/stoneworx.ReactEmail.mpk`.
+4. `npm test` runs the unit tests. It uses Babel rather than the toolchain's
+   `test:unit:web`, whose SWC addon refuses to load on Windows machines where
+   `C:\` lets other users replace files.
+5. `npm run release` lints and produces
+   `dist/<version>/stoneworx.ReactEmail.mpk`. Copy it into the app's `widgets`
+   folder and press F4 in Studio Pro.
 
 `prettier.config.js` and `.eslintrc.js` must stay CommonJS, which is why this
 package is not `"type": "module"`; the Rollup config lives in

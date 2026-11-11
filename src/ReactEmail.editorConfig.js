@@ -40,7 +40,7 @@
  * @property {string} studioUrl
  */
 
-const DOCS_URL = "https://github.com/stoneworx/email-editor-mendix";
+const DOCS_URL = "https://github.com/StoneworxNL/react-email-editor";
 
 /** Remove a property from the (nested) property group tree, in place. */
 function hideProperty(groups, key) {
@@ -92,7 +92,22 @@ export function getProperties(values, defaultProperties, _target) {
     }
 
     if (!values.variablesDatasource) {
-        hideProperties(groups, ["variableName", "variableLabel", "variableSample", "variablePrefix", "variableSuffix"]);
+        hideProperties(groups, [
+            "variableName",
+            "variableToken",
+            "variableLabel",
+            "variableSample",
+            "variablePrefix",
+            "variableSuffix"
+        ]);
+    }
+
+    if (values.imageMode === "disabled" || values.imageMode === "promptUrl") {
+        hideProperty(groups, "imageMaxSize");
+    }
+
+    if (!values.onSendTestAction) {
+        hideProperty(groups, "sendTestCaption");
     }
 
     if (values.imageMode !== "microflow") {
@@ -101,6 +116,7 @@ export function getProperties(values, defaultProperties, _target) {
             "imageNameAttribute",
             "imageUrlAttribute",
             "onImageUpload",
+            "imageUploadOpensPage",
             "imageUploadTimeout"
         ]);
     }
@@ -112,6 +128,9 @@ export function getProperties(values, defaultProperties, _target) {
  * @param {Object} values
  * @returns {Problem[]} returns a list of problems.
  */
+/** Seconds a user needs on an upload page for alt text, cropping or a library. */
+const MIN_PAGE_UPLOAD_TIMEOUT_S = 120;
+
 export function check(values) {
     /** @type {Problem[]} */
     const errors = [];
@@ -143,11 +162,12 @@ export function check(values) {
         });
     }
 
-    if (values.variablesDatasource && !values.variableName) {
+    if (values.variablesDatasource && !values.variableName && !values.variableToken) {
         errors.push({
             property: "variableName",
             severity: "error",
-            message: "Select the attribute that holds the variable name, otherwise no variable can be inserted.",
+            message:
+                "Select the attribute that holds the variable name or the full token, otherwise no variable can be inserted.",
             url: DOCS_URL
         });
     }
@@ -187,6 +207,24 @@ export function check(values) {
                 url: DOCS_URL
             });
         }
+        if (values.imageUploadOpensPage && (values.imageUploadTimeout ?? 0) < MIN_PAGE_UPLOAD_TIMEOUT_S) {
+            errors.push({
+                property: "imageUploadTimeout",
+                severity: "warning",
+                message: `The upload action opens a page, so give the user time to fill it in: set the timeout to at least ${MIN_PAGE_UPLOAD_TIMEOUT_S} seconds. Until it runs out, the next image waits.`,
+                url: DOCS_URL
+            });
+        }
+    }
+
+    if (values.imageMode === "dataUrl") {
+        errors.push({
+            property: "imageMode",
+            severity: "warning",
+            message:
+                "Images are embedded as data URLs: they are stored inside every template and many email clients will not show them. Use Upload via microflow, or Ask for a URL, for emails you send.",
+            url: DOCS_URL
+        });
     }
 
     if (values.heightMode === "fixed" && values.heightValue && values.heightValue < 320) {
