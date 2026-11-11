@@ -34,3 +34,5 @@ All notable changes to the Email Template Editor widget.
   are found in the rendered HTML.
 - The editor's controls render at full size in Atlas apps (10px root font).
 - The widget sizes from its container, so pages no longer scroll sideways on phones.
+- The Variable menu is no longer hidden behind the formatting toolbar and the
+  image edit button.
