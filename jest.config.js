@@ -5,13 +5,41 @@
 // cache directory lets other users replace files (the default ACL on C:\):
 // "SWC native addon: user cache failed ... DACL grants replacement rights".
 // Babel needs no native code, so `npm test` works everywhere.
+const { existsSync, readdirSync, readFileSync } = require("fs");
+const { join } = require("path");
 const base = require("@mendix/pluggable-widgets-tools/test-config/jest.config.js");
+
+/**
+ * Top-level packages that ship ES modules only ("type": "module"), so Jest has
+ * to transform them. React Email's editor pulls in many (the unified/hast
+ * family); listing them by hand would break on every dependency update.
+ */
+function esmOnlyPackages() {
+    const root = join(__dirname, "node_modules");
+    if (!existsSync(root)) {
+        return [];
+    }
+    const names = readdirSync(root).flatMap(name =>
+        name.startsWith("@") ? readdirSync(join(root, name)).map(scoped => `${name}/${scoped}`) : [name]
+    );
+    return names.filter(name => {
+        try {
+            return JSON.parse(readFileSync(join(root, name, "package.json"), "utf8")).type === "module";
+        } catch {
+            return false;
+        }
+    });
+}
+
+const escape = name => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// React Email and Tiptap ship ESM in .js/.mjs files without "type": "module".
+const TRANSFORMED = ["@react-email", "react-email", "@tiptap", ...esmOnlyPackages().map(escape)];
 
 module.exports = {
     ...base,
     collectCoverage: false,
     transform: {
-        "^.+.jsx?$": [
+        "^.+.m?jsx?$": [
             "babel-jest",
             {
                 babelrc: false,
@@ -23,7 +51,5 @@ module.exports = {
             }
         ]
     },
-    // React Email and Tiptap ship ESM; the editor itself is mocked in the tests,
-    // but its helpers still have to be transformed when imported.
-    transformIgnorePatterns: ["/node_modules/(?!(@react-email|react-email|@tiptap)/)"]
+    transformIgnorePatterns: [`/node_modules/(?!(${TRANSFORMED.join("|")})/)`]
 };
