@@ -1,7 +1,8 @@
 # Email Template Editor widget
 
 Mendix pluggable widget (web) that wraps the [React Email 6](https://react.email) editor (`@react-email/editor`, built
-on Tiptap). Public repo, published on the Mendix Marketplace by Stoneworx.
+on Tiptap). Published on the Mendix Marketplace by Stoneworx. The repo is private for now and goes public with the
+Marketplace release, so treat everything in it, history included, as public.
 
 ## Before you start
 
@@ -18,8 +19,9 @@ already in progress there. If a PR is open, put follow-up commits on its branch 
 -   `npm start` / `npm run build` are development builds that copy the widget into the Mendix app at
     `config.projectPath` (`../../`). Ship only the `release` build.
 -   The release `.mpk` must contain `LICENSE` and the generated `dependencies.txt` (license text of every bundled
-    package). CI checks both. The tools' own LICENSE copy silently fails on Windows (backslash path in a glob), so
-    `rollup.config.mjs` copies LICENSE itself (`copyLicenseIntoWidget`).
+    package). `postrelease` (`scripts/check-mpk.js`) checks both after every `npm run release`, on any OS. The tools'
+    own LICENSE copy silently fails on Windows (backslash path in a glob), so `rollup.config.mjs` copies LICENSE itself
+    (`copyLicenseIntoWidget`) and fails the build if it can't.
 
 ## Dependency quirks
 
@@ -47,8 +49,12 @@ attach the release `.mpk` to the GitHub release.
 -   Commits: author and committer `João Lopes <jlopes@stoneworx.nl>`, no `Co-Authored-By` trailers. Never force-push or
     rewrite history.
 -   Bundled (production) dependencies must be MIT, MIT-0, ISC, BSD-2/3-Clause, 0BSD, Apache-2.0, Python-2.0, CC0-1.0 or
-    BlueOak-1.0.0 (the `Compliance` workflow checks this; a dual license passes when one option is allowed). Anything
-    else needs a decision before it is added.
+    BlueOak-1.0.0 (the `Compliance` workflow checks this with `license-checker-rseidelsohn@4.4.2`; a dual license passes
+    when one option is allowed). Anything else needs a decision before it is added.
+-   The `Compliance` workflow pins gitleaks by version and SHA-256 (`GITLEAKS_VERSION`, `GITLEAKS_SHA256`, from the
+    release's checksums file). Update both together.
+-   The `Request review` workflow needs the `PR_REVIEWER` repository or organization variable (a GitHub login); without
+    it the job is skipped. Never hard-code a login in the workflow.
 -   A bundled package that ships no license file loses its notice in `dependencies.txt`. Add its upstream license to the
     "Third-party notices" section of `LICENSE` (currently `react-remove-scroll-bar`).
 -   The widget is Apache-2.0 (`LICENSE`, `package.json` `license`).

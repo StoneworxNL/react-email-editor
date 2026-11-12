@@ -330,7 +330,8 @@ export default { version, renderToString, renderToStaticMarkup, renderToReadable
 // copy is skipped without a word, so a release built on Windows ships without
 // LICENSE (Linux builds, including CI, are fine). Copy it ourselves. The plugin
 // sits ahead of the Mendix plugins, so its writeBundle runs, synchronously,
-// before theirs zips the folder into the .mpk.
+// before theirs zips the folder into the .mpk. It fails the build rather than
+// skip the copy, and `postrelease` (scripts/check-mpk.js) checks the .mpk too.
 const WIDGET_OUT_DIR = join(process.cwd(), "dist", "tmp", "widgets");
 
 function copyLicenseIntoWidget() {
@@ -339,9 +340,13 @@ function copyLicenseIntoWidget() {
 
         writeBundle() {
             const license = join(process.cwd(), "LICENSE");
-            if (existsSync(license) && existsSync(WIDGET_OUT_DIR)) {
-                copyFileSync(license, join(WIDGET_OUT_DIR, "LICENSE"));
+            if (!existsSync(license)) {
+                this.error(`LICENSE not found at ${license}; the .mpk must ship it.`);
             }
+            if (!existsSync(WIDGET_OUT_DIR)) {
+                this.error(`${WIDGET_OUT_DIR} does not exist, so LICENSE cannot be copied into the .mpk.`);
+            }
+            copyFileSync(license, join(WIDGET_OUT_DIR, "LICENSE"));
         }
     };
 }

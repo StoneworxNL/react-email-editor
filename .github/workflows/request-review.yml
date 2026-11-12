@@ -3,10 +3,16 @@ name: Request review
 # When all checks pass on a pull request, ask the reviewer for a review.
 # Skips drafts, PRs opened by the reviewer, and PRs the reviewer was already asked
 # to review or has reviewed. Takes effect once this file is on the default branch.
+# The reviewer's GitHub login comes from the PR_REVIEWER repository or organization
+# variable; without it the job is skipped.
+#
+# Runs after CI and after Compliance, so whichever finishes last finds every check
+# done. Runs for the same commit take turns, so the second one sees the first one's
+# request and does not ask again.
 
 on:
     workflow_run:
-        workflows: [CI]
+        workflows: [CI, Compliance]
         types: [completed]
 
 permissions:
@@ -14,12 +20,17 @@ permissions:
 
 jobs:
     request-review:
-        if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+        if: >-
+            vars.PR_REVIEWER != '' && github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'pull_request'
+        concurrency:
+            group: request-review-${{ github.event.workflow_run.head_sha }}
+            cancel-in-progress: false
         runs-on: ubuntu-latest
         env:
             GH_TOKEN: ${{ github.token }}
             REPO: ${{ github.repository }}
-            REVIEWER: ${{ vars.PR_REVIEWER || 'rcunhasx' }}
+            REVIEWER: ${{ vars.PR_REVIEWER }}
             HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         steps:
             - name: Request review
