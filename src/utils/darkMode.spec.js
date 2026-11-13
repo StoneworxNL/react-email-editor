@@ -72,6 +72,12 @@ describe("darkRules", () => {
     it("leaves the text fill alone for parts without a dark text colour", () => {
         expect(darkRules({ divider: { borderColor: "#333" } }).join("\n")).not.toContain("text-fill");
     });
+
+    it("sets the text fill only on the button and code tokens, since it is inherited", () => {
+        const colour = { color: "#eee" };
+        const rules = darkRules({ body: colour, paragraph: colour, h1: colour, container: colour, link: colour });
+        expect(rules.join("\n")).not.toContain("text-fill");
+    });
 });
 
 describe("applyDarkMode", () => {

@@ -40,6 +40,11 @@ const DOCUMENT = {
             content: [
                 { type: "heading", attrs: { level: 1 }, content: [text("Your order")] },
                 paragraph(text("Hello {%FirstName%}, thank you for your order.")),
+                paragraph(text("You can "), {
+                    type: "text",
+                    text: "track it",
+                    marks: [{ type: "link", attrs: { href: "https://example.com/track" } }]
+                }),
                 {
                     type: "twoColumns",
                     content: [
@@ -61,6 +66,8 @@ const THEME_CONFIG = JSON.stringify({
     styles: { button: { backgroundColor: "#007693", color: "#ffffff" } },
     dark: {
         body: { backgroundColor: "#111111", color: "#eeeeee" },
+        // A paragraph colour and no link colour, as in the README's example.
+        paragraph: { color: "#dddddd" },
         container: { backgroundColor: "#1c1c1c" },
         button: { backgroundColor: "#4fc3e0", color: "#000000" }
     }
@@ -148,6 +155,24 @@ describe("rendering an email the way the widget saves it", () => {
         const darkRules = css.match(/\.rem-dark-button\{[^}]*\}/g) ?? [];
         for (const property of inline) {
             expect(darkRules.some(rule => setsProperty(rule.slice(rule.indexOf("{") + 1, -1), property))).toBe(true);
+        }
+    });
+
+    it("keeps a link's own colour inside a dark paragraph in WebKit", () => {
+        // -webkit-text-fill-color is inherited and paints over color, so a fill on
+        // the paragraph (or anything around the link) would recolour the link.
+        const link = saved.doc.querySelector('a[href="https://example.com/track"]');
+        expect(link).not.toBeNull();
+        const css = [...saved.doc.querySelectorAll("head style")].map(element => element.textContent).join("");
+        const filled = new Set(
+            [...css.matchAll(/.rem-dark-([a-z0-9-]+){[^}]*-webkit-text-fill-color/g)].map(match => match[1])
+        );
+        expect(filled.has("paragraph")).toBe(false);
+        for (let element = link; element; element = element.parentElement) {
+            const parts = [...element.classList]
+                .filter(name => name.startsWith("rem-dark-"))
+                .map(name => name.slice(9));
+            expect(parts.filter(part => filled.has(part))).toEqual([]);
         }
     });
 
