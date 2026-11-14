@@ -62,6 +62,22 @@ describe("darkRules", () => {
         expect(rules).toContain("[data-ogsc] .rem-dark-button{color:#fff !important}");
         expect(rules).toContain("[data-ogsb] .rem-dark-button{background-color:#0089ab !important}");
     });
+
+    it("overrides an inline -webkit-text-fill-color too, which WebKit paints over color", () => {
+        const rules = darkRules({ button: { color: "#fff" }, code: { color: "#eee" } }).join("\n");
+        expect(rules).toContain(".rem-dark-button{-webkit-text-fill-color:#fff !important}");
+        expect(rules).toContain(".rem-dark-code *{-webkit-text-fill-color:#eee !important}");
+    });
+
+    it("leaves the text fill alone for parts without a dark text colour", () => {
+        expect(darkRules({ divider: { borderColor: "#333" } }).join("\n")).not.toContain("text-fill");
+    });
+
+    it("sets the text fill only on the button and code tokens, since it is inherited", () => {
+        const colour = { color: "#eee" };
+        const rules = darkRules({ body: colour, paragraph: colour, h1: colour, container: colour, link: colour });
+        expect(rules.join("\n")).not.toContain("text-fill");
+    });
 });
 
 describe("applyDarkMode", () => {

@@ -135,9 +135,19 @@ export function darkRules(dark) {
             .map(([prop, value]) => `${CSS_NAMES[prop]}:${value} !important`)
             .join(";");
         rules.push(`.${PREFIX}${part}{${declarations}}`);
+        if (part === "button" && props.color) {
+            // WebKit paints text with -webkit-text-fill-color over color. React
+            // Email sets it inline on buttons (to keep labels readable in Apple
+            // Mail's own dark mode), which would keep the light label colour.
+            // Only where it is set inline: the property is inherited, so on a
+            // paragraph or the body it would repaint links and coloured spans
+            // inside in that part's colour.
+            rules.push(`.${PREFIX}button{-webkit-text-fill-color:${props.color} !important}`);
+        }
         if (part === "code" && props.color) {
             // Syntax tokens carry light-theme colours meant for a light block.
             rules.push(`.${PREFIX}code *{color:${props.color} !important}`);
+            rules.push(`.${PREFIX}code *{-webkit-text-fill-color:${props.color} !important}`);
         }
         // Outlook.com and the Outlook apps mark their dark mode with attributes.
         const colour = props.color ? `color:${props.color} !important` : "";

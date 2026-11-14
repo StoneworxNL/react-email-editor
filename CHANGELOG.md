@@ -20,6 +20,15 @@ All notable changes to the Email Template Editor widget.
 - Studio Pro toolbox icon and tile, light and dark.
 - Unit tests (`npm test`) and a CI workflow (lint, test, build).
 
+### Changed
+- Updated @react-email/editor 1.7.7 to 1.8.4 (react-email 6.9.5 to 6.11.11) and
+  Tiptap 3.32.0 to 3.33.1. Upstream fixes: placeholders on empty headings, slash
+  command menu clicks and crashes, code block highlighting for language aliases,
+  and buttons stay readable in Apple Mail dark mode. The .mpk is about 18% smaller.
+  Dark-mode button labels keep their dark colour in Apple Mail, where React Email
+  now sets an inline `-webkit-text-fill-color`.
+  Still needs Mendix 11.12 or later; building needs Node 22.18 or later (below 23).
+
 ### Fixed
 - Edits typed while a save was rendering are no longer marked as saved.
 - Automatic save no longer overwrites a version changed elsewhere while the
