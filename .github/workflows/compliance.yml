@@ -13,7 +13,7 @@ jobs:
         name: Secrets (gitleaks)
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
             - name: Scan the full history for secrets
@@ -33,7 +33,7 @@ jobs:
         name: Licenses of bundled dependencies
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: actions/setup-node@v5
               with:
                   # pluggable-widgets-tools 11.12 requires >=22.18.0 <23.
