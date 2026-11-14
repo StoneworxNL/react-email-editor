@@ -155,7 +155,8 @@
 
 .mxre-menu-list {
     position: absolute;
-    z-index: 20;
+    /* Above the editor bubble menus (z-index 50 in @react-email/editor) so an open menu is never covered. */
+    z-index: 60;
     top: calc(100% + 4px);
     left: 0;
     min-width: 220px;

@@ -3,7 +3,7 @@
     "widgetName": "ReactEmail",
     "version": "1.0.0",
     "description": "Load, edit and save email templates with the React Email 6 editor, as a Mendix pluggable widget.",
-    "copyright": "© Stoneworx 2026. All rights reserved.",
+    "copyright": "Copyright 2026 Stoneworx",
     "author": "João Lopes",
     "engines": {
         "node": ">=22.18.0 <23"
@@ -23,6 +23,7 @@
         "lint:fix": "pluggable-widgets-tools lint:fix",
         "prerelease": "npm run lint",
         "release": "pluggable-widgets-tools release:web",
+        "postrelease": "node scripts/check-mpk.js",
         "test": "jest --config jest.config.js"
     },
     "devDependencies": {

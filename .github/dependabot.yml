@@ -1,0 +1,18 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+      groups:
+          dependencies:
+              patterns: ["*"]
+      ignore:
+          # The toolchain must match the target Studio Pro (11.12.x, React 19.2.3).
+          # Move it by hand together with the app, not through Dependabot.
+          - dependency-name: "@mendix/pluggable-widgets-tools"
+            update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: monthly
