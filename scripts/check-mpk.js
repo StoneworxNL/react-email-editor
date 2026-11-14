@@ -36,23 +36,23 @@ function zipEntryNames(buffer) {
     return names;
 }
 
+// Only the folder of the version being released: an .mpk left in another
+// dist/<version>/ by an older build must not fail (or pass) this one.
+const { version } = require("../package.json");
+const releaseDir = join(__dirname, "..", "dist", version);
+
 function releaseMpks() {
-    const dist = join(__dirname, "..", "dist");
-    if (!existsSync(dist)) {
+    if (!existsSync(releaseDir)) {
         return [];
     }
-    return readdirSync(dist, { withFileTypes: true })
-        .filter(entry => entry.isDirectory() && entry.name !== "tmp")
-        .flatMap(dir =>
-            readdirSync(join(dist, dir.name))
-                .filter(file => file.endsWith(".mpk"))
-                .map(file => join(dist, dir.name, file))
-        );
+    return readdirSync(releaseDir)
+        .filter(file => file.endsWith(".mpk"))
+        .map(file => join(releaseDir, file));
 }
 
 const mpks = releaseMpks();
 if (mpks.length === 0) {
-    console.error("check-mpk: no .mpk found under dist/<version>/");
+    console.error(`check-mpk: no .mpk found in ${releaseDir}`);
     process.exit(1);
 }
 
