@@ -18,7 +18,7 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm test
-            # Lints again and builds the .mpk.
+            # Lints again, builds the .mpk, and (postrelease) checks it ships LICENSE and dependencies.txt.
             - run: npm run release
             - uses: actions/upload-artifact@v5
               with:

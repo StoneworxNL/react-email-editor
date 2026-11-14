@@ -1,0 +1,58 @@
+name: Request review
+
+# When all checks pass on a pull request, ask the reviewer for a review.
+# Skips drafts, PRs opened by the reviewer, and PRs the reviewer was already asked
+# to review or has reviewed. Takes effect once this file is on the default branch.
+# The reviewer's GitHub login comes from the PR_REVIEWER repository or organization
+# variable; without it the job is skipped.
+#
+# Runs after CI and after Compliance, so whichever finishes last finds every check
+# done. Runs for the same commit take turns, so the second one sees the first one's
+# request and does not ask again.
+
+on:
+    workflow_run:
+        workflows: [CI, Compliance]
+        types: [completed]
+
+permissions:
+    pull-requests: write
+
+jobs:
+    request-review:
+        if: >-
+            vars.PR_REVIEWER != '' && github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'pull_request'
+        concurrency:
+            group: request-review-${{ github.event.workflow_run.head_sha }}
+            cancel-in-progress: false
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ github.token }}
+            REPO: ${{ github.repository }}
+            REVIEWER: ${{ vars.PR_REVIEWER }}
+            HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        steps:
+            - name: Request review
+              run: |
+                  for pr in $(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" --jq '.[] | select(.state == "open") | .number'); do
+                      info=$(gh api "repos/$REPO/pulls/$pr" --jq '"\(.draft) \(.user.login) \(.head.sha)"')
+                      read -r draft author sha <<< "$info"
+                      if [ "$sha" != "$HEAD_SHA" ] || [ "$draft" = "true" ] || [ "$author" = "$REVIEWER" ]; then
+                          echo "PR #$pr: skipped (outdated run, draft, or opened by $REVIEWER)"
+                          continue
+                      fi
+                      pending=$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs" --paginate --jq '.check_runs[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")) | .name')
+                      if [ -n "$pending" ]; then
+                          echo "PR #$pr: waiting for other checks: $pending"
+                          continue
+                      fi
+                      requested=$(gh api "repos/$REPO/pulls/$pr/requested_reviewers" --jq "[.users[] | select(.login == \"$REVIEWER\")] | length")
+                      reviewed=$(gh api "repos/$REPO/pulls/$pr/reviews" --jq "[.[] | select(.user.login == \"$REVIEWER\")] | length")
+                      if [ "$requested" = 0 ] && [ "$reviewed" = 0 ]; then
+                          gh api -X POST "repos/$REPO/pulls/$pr/requested_reviewers" -f "reviewers[]=$REVIEWER" > /dev/null
+                          echo "PR #$pr: review requested from $REVIEWER"
+                      else
+                          echo "PR #$pr: $REVIEWER already requested or reviewed"
+                      fi
+                  done
