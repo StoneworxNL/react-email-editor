@@ -2,7 +2,7 @@
 
 All notable changes to the Email Template Editor widget.
 
-## [1.0.0] - unreleased
+## [1.0.0] - 2026-11-14
 
 ### Added
 - Mendix 11 support (React 19.2.3, pluggable-widgets-tools 11.12).
