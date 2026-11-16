@@ -34,7 +34,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@v7
               with:
                   # pluggable-widgets-tools 11.12 requires >=22.18.0 <23.
                   node-version: 22
